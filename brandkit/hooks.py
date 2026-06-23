@@ -86,7 +86,7 @@ app_license = "mit"
 # ------------
 
 # before_install = "brandkit.install.before_install"
-after_install = "brandkit.install.after_install"
+# after_install = "brandkit.install.after_install"
 
 # Uninstallation
 # ------------
@@ -256,3 +256,17 @@ after_install = "brandkit.install.after_install"
 # List of apps whose translatable strings should be excluded from this app's translations.
 # ignore_translatable_strings_from = []
 
+fixtures = [
+{
+  "doctype": "Navbar Settings"
+},
+{
+  "doctype": "Website Settings"
+},
+{
+  "doctype": "Translation",
+  "filters": [
+    ["name", "in", ["f1ibqc0d28", "elvqeln2p7"]]
+  ]
+}
+]

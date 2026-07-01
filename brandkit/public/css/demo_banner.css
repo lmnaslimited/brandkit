@@ -1,0 +1,302 @@
+/*
+ * BrandKit Demo Banner
+ *
+ * Styling for:
+ *  - Demo banner
+ *  - Industry selector
+ *  - Progress dialog
+ *
+ * Uses Frappe CSS variables wherever possible so that
+ * it automatically adapts to light/dark themes.
+ */
+
+/* ------------------------------------------------------------------ */
+/* Demo Banner */
+/* ------------------------------------------------------------------ */
+
+.brandkit-demo-banner {
+
+	display: flex;
+
+	flex-direction: column;
+
+	gap: 16px;
+
+	padding: 20px;
+
+	margin-bottom: 20px;
+
+	background: var(--fg-color);
+
+	border: 1px solid var(--border-color);
+
+	border-radius: var(--border-radius-md);
+
+	box-shadow: var(--shadow-sm);
+}
+
+/* ------------------------------------------------------------------ */
+/* Title */
+/* ------------------------------------------------------------------ */
+
+.brandkit-demo-title {
+
+	font-size: 20px;
+
+	font-weight: 600;
+
+	color: var(--text-color);
+}
+
+/* ------------------------------------------------------------------ */
+/* Description */
+/* ------------------------------------------------------------------ */
+
+.brandkit-demo-description {
+
+	font-size: 14px;
+
+	line-height: 1.6;
+
+	color: var(--text-muted);
+}
+
+/* ------------------------------------------------------------------ */
+/* Controls */
+/* ------------------------------------------------------------------ */
+
+.brandkit-demo-controls {
+
+	display: flex;
+
+	align-items: center;
+
+	gap: 12px;
+
+	flex-wrap: wrap;
+}
+
+/* ------------------------------------------------------------------ */
+/* Industry Dropdown */
+/* ------------------------------------------------------------------ */
+
+.brandkit-demo-controls select {
+
+	min-width: 220px;
+
+	max-width: 280px;
+}
+
+/* ------------------------------------------------------------------ */
+/* Buttons */
+/* ------------------------------------------------------------------ */
+
+.brandkit-demo-controls .btn {
+
+	white-space: nowrap;
+}
+
+/* ------------------------------------------------------------------ */
+/* Progress Dialog */
+/* ------------------------------------------------------------------ */
+
+.brandkit-progress-wrapper {
+
+	display: flex;
+
+	flex-direction: column;
+
+	gap: 16px;
+
+	padding: 12px 0;
+}
+
+/* ------------------------------------------------------------------ */
+/* Progress Message */
+/* ------------------------------------------------------------------ */
+
+.brandkit-progress-message {
+
+	font-size: 14px;
+
+	font-weight: 500;
+
+	color: var(--text-color);
+
+	word-break: break-word;
+}
+
+/* ------------------------------------------------------------------ */
+/* Progress Bar Container */
+/* ------------------------------------------------------------------ */
+
+.brandkit-progress-bar {
+
+	position: relative;
+
+	width: 100%;
+
+	height: 12px;
+
+	background: var(--gray-200);
+
+	border-radius: 999px;
+
+	overflow: hidden;
+}
+
+/* ------------------------------------------------------------------ */
+/* Progress Fill */
+/* ------------------------------------------------------------------ */
+
+.brandkit-progress-fill {
+
+	height: 100%;
+
+	width: 0;
+
+	background: var(--primary);
+
+	transition: width 250ms ease;
+}
+
+/* ------------------------------------------------------------------ */
+/* Percentage */
+/* ------------------------------------------------------------------ */
+
+.brandkit-progress-percent {
+
+	text-align: right;
+
+	font-size: 13px;
+
+	font-weight: 600;
+
+	color: var(--text-muted);
+}
+
+/* ------------------------------------------------------------------ */
+/* Success State */
+/* ------------------------------------------------------------------ */
+
+.brandkit-progress-fill.success {
+
+	background: var(--green-500);
+}
+
+/* ------------------------------------------------------------------ */
+/* Error State */
+/* ------------------------------------------------------------------ */
+
+.brandkit-progress-fill.error {
+
+	background: var(--red-500);
+}
+
+/* ------------------------------------------------------------------ */
+/* Responsive */
+/* ------------------------------------------------------------------ */
+
+@media (max-width: 768px) {
+
+	.brandkit-demo-controls {
+
+		flex-direction: column;
+
+		align-items: stretch;
+	}
+
+	.brandkit-demo-controls select {
+
+		max-width: 100%;
+
+		width: 100%;
+	}
+
+	.brandkit-demo-controls .btn {
+
+		width: 100%;
+	}
+}
+
+.brandkit-demo-toast {
+
+    position: fixed;
+
+    right: 20px;
+
+    bottom: 20px;
+
+    width: 330px;
+
+    background: white;
+
+    border-radius: 12px;
+
+    box-shadow: 0 10px 30px rgba(0,0,0,.12);
+
+    overflow: hidden;
+
+    z-index: 1000;
+
+}
+
+.brandkit-demo-header{
+
+    display:flex;
+
+    justify-content:space-between;
+
+    align-items:center;
+
+    padding:18px;
+
+    font-weight:600;
+
+}
+
+.brandkit-demo-body{
+
+    padding:0 18px 18px;
+
+}
+
+.brandkit-demo-actions{
+
+    display:flex;
+
+    gap:8px;
+
+}
+
+.brandkit-demo-action{
+
+    border:none;
+
+    background:none;
+
+    cursor:pointer;
+
+    color:#666;
+
+    padding:4px;
+
+}
+
+.brandkit-demo-action:hover{
+
+    color:#111;
+
+}
+
+.brandkit-demo-toast.minimized{
+
+    width:330px;
+
+}
+
+.brandkit-demo-toast.minimized .brandkit-demo-body{
+
+    display:none;
+
+}

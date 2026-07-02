@@ -57,7 +57,7 @@ class DemoImporter:
 
     # -------------------------------------------------------------------------
 
-    def import_file(self, folder: str, filename: str):
+    def import_file(self, folder: str, filename: str, submit=False):
         """
         Import all records from a cached JSON file.
         """
@@ -71,13 +71,13 @@ class DemoImporter:
             records = json.load(file)
 
         for record in records:
-            self.import_doc(record)
+            self.import_doc(record, submit)
 
         frappe.db.commit()
 
     # -------------------------------------------------------------------------
 
-    def import_doc(self, record: dict):
+    def import_doc(self, record: dict, submit=False):
         """
         Import a single document.
         """
@@ -90,6 +90,8 @@ class DemoImporter:
         doc.insert(
             ignore_permissions=True,
         )
+        if submit and doc.docstatus == 0:
+            doc.submit()
 
     # -------------------------------------------------------------------------
 
@@ -193,8 +195,9 @@ def import_transaction_documents(industry: str):
         )
 
         importer.import_file(
-            "transactions",
-            file_info["file"],
+            folder="transactions",
+            filename=file_info["file"],
+            submit=file_info.get("submit", False),
         )
 
     finish_installation(industry)

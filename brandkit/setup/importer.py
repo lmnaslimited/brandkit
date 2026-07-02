@@ -34,26 +34,6 @@ class DemoImporter:
         self.cache_root = repository.cache_root
         self.manifest = repository.get_manifest()
 
-    # -------------------------------------------------------------------------
-
-    def import_section(self, folder: str, files: list[dict]):
-        """
-        Import every file in a manifest section.
-        """
-
-        total = len(files)
-
-        for index, file_info in enumerate(files, start=1):
-
-            update_progress(
-                f"Importing {file_info['doctype']}...",
-                30 + int(index / max(total, 1) * 50),
-            )
-
-            self.import_file(
-                folder,
-                file_info["file"],
-            )
 
     # -------------------------------------------------------------------------
 
@@ -136,7 +116,7 @@ class DemoImporter:
 
 
 @frappe.whitelist()
-def import_master_documents(industry: str):
+def import_master_documents(industry: str, show_progress: bool = True):
     """
     Background job that imports all master documents.
     """
@@ -152,11 +132,11 @@ def import_master_documents(industry: str):
     total = len(masters)
 
     for index, file_info in enumerate(masters, start=1):
-
-        update_progress(
-            f"Importing {file_info['doctype']}...",
-            30 + int(index / max(total, 1) * 30),
-        )
+        if show_progress:
+            update_progress(
+                f"Importing {file_info['doctype']}...",
+                30 + int(index / max(total, 1) * 30),
+            )
 
         importer.import_file(
             "masters",
@@ -168,11 +148,12 @@ def import_master_documents(industry: str):
         queue="long",
         timeout=7200,
         industry=industry,
+        show_progress=show_progress
     )
 
 
 @frappe.whitelist()
-def import_transaction_documents(industry: str):
+def import_transaction_documents(industry: str, show_progress: bool = True):
     """
     Background job that imports all transaction documents.
     """
@@ -189,10 +170,11 @@ def import_transaction_documents(industry: str):
 
     for index, file_info in enumerate(transactions, start=1):
 
-        update_progress(
-            f"Importing {file_info['doctype']}...",
-            60 + int(index / max(total, 1) * 35),
-        )
+        if show_progress:
+            update_progress(
+                f"Importing {file_info['doctype']}...",
+                60 + int(index / max(total, 1) * 35),
+            )
 
         importer.import_file(
             folder="transactions",
@@ -200,7 +182,7 @@ def import_transaction_documents(industry: str):
             submit=file_info.get("submit", False),
         )
 
-    finish_installation(industry)
+    finish_installation(industry, show_progress)
 
 
 # =============================================================================
@@ -208,7 +190,7 @@ def import_transaction_documents(industry: str):
 # =============================================================================
 
 
-def finish_installation(industry: str):
+def finish_installation(industry: str, show_progress: bool = True):
     """
     Mark the demo installation as completed.
     """
@@ -222,7 +204,8 @@ def finish_installation(industry: str):
 
     frappe.db.commit()
 
-    update_progress(
-        "Demo setup completed.",
-        100,
-    )
+    if show_progress:
+        update_progress(
+            "Demo setup completed.",
+            100,
+        )

@@ -50,7 +50,7 @@ def get_demo_banner_state():
 
 
 @frappe.whitelist()
-def setup_demo_data(industry: str):
+def setup_demo_data(industry: str, show_progress: bool = True):
     """
     Start the demo installation.
 
@@ -58,9 +58,24 @@ def setup_demo_data(industry: str):
     ----------
     industry:
         Industry selected by the user.
+
+    show_progress:
+        Whether realtime progress events should
+        be published to the client.
     """
 
     if not industry:
         frappe.throw("Please select an industry.")
 
-    DemoDataFactory.run(industry)
+    # frappe.call() sends everything as strings.
+    if isinstance(show_progress, str):
+        show_progress = show_progress.lower() in (
+            "1",
+            "true",
+            "yes",
+        )
+
+    DemoDataFactory.run(
+        industry=industry,
+        show_progress=show_progress,
+    )

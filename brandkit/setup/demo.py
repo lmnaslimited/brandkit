@@ -38,7 +38,7 @@ class DemoDataFactory:
     """
 
     @staticmethod
-    def run(industry: str):
+    def run(industry: str, show_progress: bool = True):
         """
         Entry point for installing demo data.
 
@@ -51,7 +51,10 @@ class DemoDataFactory:
         factory = DemoDataFactory()
 
         # Initialize the installer
-        factory.initialize(industry)
+        factory.initialize(
+            industry=industry,
+            show_progress=show_progress,
+        )
 
         # Skip installation if demo data already exists
         if factory.demo_exists():
@@ -62,8 +65,8 @@ class DemoDataFactory:
         # Phase 2
         # Download and cache all demo resources from the repository
         # ------------------------------------------------------------------
-
-        update_progress("Downloading demo resources...", 20)
+        if factory.show_progress:
+            update_progress("Downloading demo resources...", 20)
 
         factory.repository.download_from_manifest()
 
@@ -72,9 +75,10 @@ class DemoDataFactory:
             queue="long",
             timeout=7200,
             industry=factory.industry,
+            show_progress=factory.show_progress,
         )
 
-    def initialize(self, industry: str):
+    def initialize(self, industry: str, show_progress: bool = True):
         """
         Initialize the installer context.
 
@@ -84,6 +88,7 @@ class DemoDataFactory:
             Selected industry.
         """
 
+        self.show_progress = show_progress
         # Store selected industry for later use
         self.industry = industry.lower()
 

@@ -75,35 +75,109 @@ class DemoImporter:
 
     # -------------------------------------------------------------------------
 
+    # -------------------------------------------------------------------------
+    # Composite uniqueness rules
+    # -------------------------------------------------------------------------
+
+    COMPOSITE_UNIQUE_FIELDS = {
+        "Warehouse": (
+            "warehouse_name",
+            "company",
+        ),
+        "Item Price": (
+            "item_code",
+            "price_list",
+        ),
+    }
     def document_exists(self, record: dict) -> bool:
         """
-        Generic duplicate detection.
+        Determine whether a document already exists.
+
+        Duplicate detection is performed in the following order:
+
+            1. Composite unique fields (custom rules)
+            2. Explicit document name
+            3. Title field
+            4. Autoname field
         """
 
         doctype = record["doctype"]
 
-        if "name" in record:
-            return bool(frappe.db.exists(doctype, record["name"]))
+        # ------------------------------------------------------------------
+        # Composite uniqueness rules
+        # ------------------------------------------------------------------
 
-        meta = frappe.get_meta(doctype)
+        if doctype in self.COMPOSITE_UNIQUE_FIELDS:
 
-        if meta.title_field and record.get(meta.title_field):
+            filters = {}
+
+            for field in self.COMPOSITE_UNIQUE_FIELDS[doctype]:
+                value = record.get(field)
+
+                if value is None:
+                    return False
+
+                filters[field] = value
+
             return bool(
                 frappe.db.exists(
                     doctype,
-                    {meta.title_field: record[meta.title_field]},
+                    filters,
                 )
             )
 
-        if meta.autoname and meta.autoname.startswith("field:"):
+        # ------------------------------------------------------------------
+        # Explicit document name
+        # ------------------------------------------------------------------
 
-            field = meta.autoname.split(":", 1)[1]
+        if record.get("name"):
+            return bool(
+                frappe.db.exists(
+                    doctype,
+                    record["name"],
+                )
+            )
 
-            if record.get(field):
+        # ------------------------------------------------------------------
+        # Title field
+        # ------------------------------------------------------------------
+
+        meta = frappe.get_meta(doctype)
+
+        if meta.title_field:
+
+            value = record.get(meta.title_field)
+
+            if value:
                 return bool(
                     frappe.db.exists(
                         doctype,
-                        {field: record[field]},
+                        {
+                            meta.title_field: value,
+                        },
+                    )
+                )
+
+        # ------------------------------------------------------------------
+        # Autoname: field:<fieldname>
+        # ------------------------------------------------------------------
+
+        if (
+            meta.autoname
+            and meta.autoname.startswith("field:")
+        ):
+
+            fieldname = meta.autoname.split(":", 1)[1]
+
+            value = record.get(fieldname)
+
+            if value:
+                return bool(
+                    frappe.db.exists(
+                        doctype,
+                        {
+                            fieldname: value,
+                        },
                     )
                 )
 
@@ -117,72 +191,94 @@ class DemoImporter:
 
 @frappe.whitelist()
 def import_master_documents(industry: str, show_progress: bool = True):
-    """
-    Background job that imports all master documents.
-    """
+    try:
+        repository = DemoRepository(industry)
+        importer = DemoImporter(repository)
+        manifest = repository.get_manifest()
 
-    repository = DemoRepository(industry)
+        masters = manifest.get("masters", [])
+        total = len(masters)
 
-    importer = DemoImporter(repository)
+        for index, file_info in enumerate(masters, start=1):
+            if show_progress:
+                update_progress(
+                    f"Importing {file_info['doctype']}...",
+                    30 + int(index / max(total, 1) * 30),
+                )
 
-    manifest = repository.get_manifest()
-
-    masters = manifest.get("masters", [])
-
-    total = len(masters)
-
-    for index, file_info in enumerate(masters, start=1):
-        if show_progress:
-            update_progress(
-                f"Importing {file_info['doctype']}...",
-                30 + int(index / max(total, 1) * 30),
+            importer.import_file(
+                folder="masters",
+                filename=file_info["file"],
+                submit=file_info.get("submit", False),
             )
 
-        importer.import_file(
-            "masters",
-            file_info["file"],
+        frappe.enqueue(
+            method="brandkit.setup.importer.import_transaction_documents",
+            queue="long",
+            timeout=7200,
+            industry=industry,
+            show_progress=show_progress,
         )
 
-    frappe.enqueue(
-        method="brandkit.setup.importer.import_transaction_documents",
-        queue="long",
-        timeout=7200,
-        industry=industry,
-        show_progress=show_progress
-    )
+    except Exception as e:
+        frappe.log_error(
+            frappe.get_traceback(),
+            "BrandKit Demo Import"
+        )
 
+        if show_progress:
+            update_progress(
+                f"Installation failed.<br>{frappe.utils.escape_html(str(e))}",
+                -1,
+            )
+
+        raise
 
 @frappe.whitelist()
 def import_transaction_documents(industry: str, show_progress: bool = True):
     """
     Background job that imports all transaction documents.
     """
+    try:
 
-    repository = DemoRepository(industry)
+        repository = DemoRepository(industry)
 
-    importer = DemoImporter(repository)
+        importer = DemoImporter(repository)
 
-    manifest = repository.get_manifest()
+        manifest = repository.get_manifest()
 
-    transactions = manifest.get("transactions", [])
+        transactions = manifest.get("transactions", [])
 
-    total = len(transactions)
+        total = len(transactions)
 
-    for index, file_info in enumerate(transactions, start=1):
+        for index, file_info in enumerate(transactions, start=1):
+
+            if show_progress:
+                update_progress(
+                    f"Importing {file_info['doctype']}...",
+                    60 + int(index / max(total, 1) * 35),
+                )
+
+            importer.import_file(
+                folder="transactions",
+                filename=file_info["file"],
+                submit=file_info.get("submit", False),
+            )
+
+        finish_installation(industry, show_progress)
+    except Exception as e:
+        frappe.log_error(
+            frappe.get_traceback(),
+            "BrandKit Demo Import"
+        )
 
         if show_progress:
             update_progress(
-                f"Importing {file_info['doctype']}...",
-                60 + int(index / max(total, 1) * 35),
+                f"Installation failed.<br>{frappe.utils.escape_html(str(e))}",
+                -1,
             )
 
-        importer.import_file(
-            folder="transactions",
-            filename=file_info["file"],
-            submit=file_info.get("submit", False),
-        )
-
-    finish_installation(industry, show_progress)
+        raise
 
 
 # =============================================================================

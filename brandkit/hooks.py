@@ -94,7 +94,7 @@ app_include_css = [
 # ------------
 
 # before_install = "brandkit.install.before_install"
-after_install = "brandkit.setup.fn_after_install"
+after_install = "brandkit.install.fn_after_install"
 
 # Uninstallation
 # ------------

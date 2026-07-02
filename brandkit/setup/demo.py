@@ -17,12 +17,6 @@ import frappe
 
 from brandkit.setup.progress import update_progress
 from brandkit.setup.repository import DemoRepository
-
-
-import frappe
-
-from brandkit.setup.progress import update_progress
-from brandkit.setup.repository import DemoRepository
 from brandkit.setup.importer import DemoImporter
 
 
@@ -61,8 +55,9 @@ class DemoDataFactory:
             update_progress("Demo data is already installed.", 100)
             return
 
+        # Validate existing transaction data
+        factory.validate_transaction_data()
         # ------------------------------------------------------------------
-        # Phase 2
         # Download and cache all demo resources from the repository
         # ------------------------------------------------------------------
         if factory.show_progress:
@@ -112,3 +107,32 @@ class DemoDataFactory:
                 "demo_installed",
             )
         )
+
+    def validate_transaction_data(self):
+        """
+        Prevent installing demo data into a company that already
+        contains transactional records.
+
+        Only the transaction doctypes declared in the selected
+        industry's manifest are checked.
+        """
+
+        for transaction in self.manifest.get("transactions", []):
+
+            doctype = transaction.get("doctype")
+
+            if not doctype:
+                continue
+
+            if frappe.db.count(doctype):
+
+                frappe.throw(
+                    (
+                        f"Transaction data already exists for <b>{doctype}</b>.<br><br>"
+                        "Please delete the existing transaction data first.<br><br>"
+                        "Go to <b>Company → Click Manage → Delete Transactions</b> "
+                        "and remove the transactions before installing "
+                        "BrandKit Demo Data."
+                    ),
+                    title="Existing Transaction Data Found",
+                )

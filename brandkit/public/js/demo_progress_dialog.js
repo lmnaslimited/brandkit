@@ -18,322 +18,324 @@
  *      progress: 55
  * }
  */
-
-frappe.provide("brandkit.demo");
-
-/**
- * Progress Dialog
- */
-brandkit.demo.ProgressDialog = class ProgressDialog {
+$(() => {
+	frappe.provide("brandkit.demo");
 
 	/**
-	 * Constructor
+	 * Progress Dialog
 	 */
-	constructor() {
+	brandkit.demo.ProgressDialog = class ProgressDialog {
 
 		/**
-		 * Frappe Dialog instance.
+		 * Constructor
 		 */
-		this.dialog = null;
+		constructor() {
 
-		/**
-		 * Progress bar element.
-		 */
-		this.$progress_fill = null;
+			/**
+			 * Frappe Dialog instance.
+			 */
+			this.dialog = null;
 
-		/**
-		 * Percentage label.
-		 */
-		this.$progress_percent = null;
+			/**
+			 * Progress bar element.
+			 */
+			this.$progress_fill = null;
 
-		/**
-		 * Current status message.
-		 */
-		this.$message = null;
+			/**
+			 * Percentage label.
+			 */
+			this.$progress_percent = null;
 
-		/**
-		 * Whether dialog has been created.
-		 */
-		this.initialized = false;
-	}
+			/**
+			 * Current status message.
+			 */
+			this.$message = null;
 
-	// ---------------------------------------------------------------------
-	// Create Dialog
-	// ---------------------------------------------------------------------
-
-	show() {
-
-		if (this.initialized) {
-			return;
+			/**
+			 * Whether dialog has been created.
+			 */
+			this.initialized = false;
 		}
 
-		this.dialog = new frappe.ui.Dialog({
-			title: __("Installing Demo Data"),
-			size: "small",
-			static: true,
-			fields: [
-				{
-					fieldtype: "HTML",
-					fieldname: "progress_html",
+		// ---------------------------------------------------------------------
+		// Create Dialog
+		// ---------------------------------------------------------------------
+
+		show() {
+
+			if (this.initialized) {
+				return;
+			}
+
+			this.dialog = new frappe.ui.Dialog({
+				title: __("Installing Demo Data"),
+				size: "small",
+				static: true,
+				fields: [
+					{
+						fieldtype: "HTML",
+						fieldname: "progress_html",
+					},
+				],
+				primary_action_label: __("Close"),
+				primary_action: () => {
+					this.hide();
 				},
-			],
-			primary_action_label: __("Close"),
-			primary_action: () => {
+			});
 
-				/*
-				 * Prevent user from closing while
-				 * installation is running.
-				 */
+			this.dialog.show();
 
-			},
-		});
+			this.dialog.set_df_property(
+				"progress_html",
+				"options",
+				this.get_html()
+			);
 
-		this.dialog.show();
+			this.cache_elements();
 
-		this.dialog.set_df_property(
-			"progress_html",
-			"options",
-			this.get_html()
-		);
+			this.initialized = true;
+		}
 
-		this.cache_elements();
+		// ---------------------------------------------------------------------
+		// HTML Template
+		// ---------------------------------------------------------------------
 
-		this.initialized = true;
-	}
+		get_html() {
 
-	// ---------------------------------------------------------------------
-	// HTML Template
-	// ---------------------------------------------------------------------
+			return `
 
-	get_html() {
-
-		return `
-
-			<div class="brandkit-progress-wrapper">
-
-				<div
-					class="brandkit-progress-message"
-				>
-					Preparing installation...
-				</div>
-
-				<div
-					class="brandkit-progress-bar"
-				>
+				<div class="brandkit-progress-wrapper">
 
 					<div
-						class="brandkit-progress-fill"
-						style="width:0%"
-					></div>
+						class="brandkit-progress-message"
+					>
+						Preparing installation...
+					</div>
+
+					<div
+						class="brandkit-progress-bar"
+					>
+
+						<div
+							class="brandkit-progress-fill"
+							style="width:0%"
+						></div>
+
+					</div>
+
+					<div
+						class="brandkit-progress-percent"
+					>
+						0%
+					</div>
 
 				</div>
 
-				<div
-					class="brandkit-progress-percent"
-				>
-					0%
-				</div>
-
-			</div>
-
-		`;
-	}
-
-	// ---------------------------------------------------------------------
-	// Cache DOM Elements
-	// ---------------------------------------------------------------------
-
-	cache_elements() {
-
-		const wrapper =
-			this.dialog.fields_dict
-				.progress_html
-				.$wrapper;
-
-		this.$progress_fill =
-			wrapper.find(
-				".brandkit-progress-fill"
-			);
-
-		this.$progress_percent =
-			wrapper.find(
-				".brandkit-progress-percent"
-			);
-
-		this.$message =
-			wrapper.find(
-				".brandkit-progress-message"
-			);
-	}
-
-	// ---------------------------------------------------------------------
-	// Update Progress
-	// ---------------------------------------------------------------------
-
-	update(progress, message) {
-
-		if (!this.initialized) {
-			return;
+			`;
 		}
 
-		progress = Math.max(
-			0,
-			Math.min(progress, 100)
-		);
+		// ---------------------------------------------------------------------
+		// Cache DOM Elements
+		// ---------------------------------------------------------------------
 
-		this.$progress_fill.css(
-			"width",
-			`${progress}%`
-		);
+		cache_elements() {
 
-		this.$progress_percent.text(
-			`${progress}%`
-		);
+			const wrapper =
+				this.dialog.fields_dict
+					.progress_html
+					.$wrapper;
 
-		this.$message.text(
-			message
-		);
-	}
-
-	// ---------------------------------------------------------------------
-	// Success
-	// ---------------------------------------------------------------------
-
-	success(message = __("Demo installation completed.")) {
-
-		this.update(
-			100,
-			message
-		);
-        this.$progress_fill
-            .removeClass("error")
-            .addClass("success");
-
-		frappe.show_alert({
-			message: message,
-			indicator: "green",
-		});
-
-		setTimeout(() => {
-
-			this.hide();
-
-			/*
-			 * Reload Desk so the newly imported
-			 * demo data becomes immediately visible.
-			 */
-			window.location.reload();
-
-		}, 1500);
-	}
-
-	// ---------------------------------------------------------------------
-	// Failure
-	// ---------------------------------------------------------------------
-
-	error(message) {
-        this.$progress_fill
-            .removeClass("success")
-            .addClass("error");
-
-		frappe.msgprint({
-			title: __("Installation Failed"),
-			message: message,
-			indicator: "red",
-		});
-
-		this.hide();
-	}
-
-	// ---------------------------------------------------------------------
-	// Hide Dialog
-	// ---------------------------------------------------------------------
-
-	hide() {
-
-		if (!this.initialized) {
-			return;
-		}
-
-		this.dialog.hide();
-
-		this.initialized = false;
-	}
-
-	// ---------------------------------------------------------------------
-	// Subscribe to Realtime Progress
-	// ---------------------------------------------------------------------
-
-	listen() {
-
-		/*
-		 * Remove any existing listener.
-		 * Prevents duplicate events after
-		 * multiple installations.
-		 */
-
-		frappe.realtime.off(
-			"brandkit_demo_progress"
-		);
-
-		/*
-		 * Listen for backend progress updates.
-		 */
-
-		frappe.realtime.on(
-			"brandkit_demo_progress",
-			(data) => {
-
-				this.update(
-					data.progress,
-					data.message
+			this.$progress_fill =
+				wrapper.find(
+					".brandkit-progress-fill"
 				);
 
-				/*
-				 * Installation completed.
-				 */
+			this.$progress_percent =
+				wrapper.find(
+					".brandkit-progress-percent"
+				);
 
-				if (data.progress >= 100) {
+			this.$message =
+				wrapper.find(
+					".brandkit-progress-message"
+				);
+		}
 
-					this.success(
-						data.message
-					);
+		// ---------------------------------------------------------------------
+		// Update Progress
+		// ---------------------------------------------------------------------
 
-					return;
-				}
+		update(progress, message) {
 
-				/*
-				 * Backend reports failure.
-				 *
-				 * Convention:
-				 * progress < 0
-				 */
-
-				if (data.progress < 0) {
-
-					this.error(
-						data.message
-					);
-
-				}
-
+			if (!this.initialized) {
+				return;
 			}
-		);
-	}
 
-	// ---------------------------------------------------------------------
-	// Public API
-	// ---------------------------------------------------------------------
+			progress = Math.max(
+				0,
+				Math.min(progress, 100)
+			);
 
-	start() {
+			this.$progress_fill.css(
+				"width",
+				`${progress}%`
+			);
 
-		this.show();
+			this.$progress_percent.text(
+				`${progress}%`
+			);
 
-		this.listen();
+			this.$message.text(
+				message
+			);
+		}
 
-		this.update(
-			0,
-			__("Preparing installation...")
-		);
-	}
-};
+		// ---------------------------------------------------------------------
+		// Success
+		// ---------------------------------------------------------------------
+
+		success(message = __("Demo installation completed.")) {
+
+			this.update(
+				100,
+				message
+			);
+			this.$progress_fill
+				.removeClass("error")
+				.addClass("success");
+
+			frappe.show_alert({
+				message: message,
+				indicator: "green",
+			});
+
+			setTimeout(() => {
+
+				this.hide();
+
+				/*
+				* Reload Desk so the newly imported
+				* demo data becomes immediately visible.
+				*/
+				window.location.reload();
+
+			}, 1500);
+		}
+
+		// ---------------------------------------------------------------------
+		// Failure
+		// ---------------------------------------------------------------------
+
+		error(message) {
+
+			this.$progress_fill
+				.removeClass("success")
+				.addClass("error");
+		
+			this.update(
+				this.$progress_percent.text().replace("%", ""),
+				__("Installation failed")
+			);
+		
+			frappe.msgprint({
+				title: __("Installation Failed"),
+				message,
+				indicator: "red",
+			});
+		
+			this.dialog.get_primary_btn().prop("disabled", false);
+		}
+
+		// ---------------------------------------------------------------------
+		// Hide Dialog
+		// ---------------------------------------------------------------------
+
+		hide() {
+
+			if (!this.initialized) {
+				return;
+			}
+
+			this.dialog.hide();
+
+			this.initialized = false;
+		}
+
+		// ---------------------------------------------------------------------
+		// Subscribe to Realtime Progress
+		// ---------------------------------------------------------------------
+
+		listen() {
+
+			/*
+			* Remove any existing listener.
+			* Prevents duplicate events after
+			* multiple installations.
+			*/
+
+			frappe.realtime.off(
+				"brandkit_demo_progress"
+			);
+
+			/*
+			* Listen for backend progress updates.
+			*/
+
+			frappe.realtime.on(
+				"brandkit_demo_progress",
+				(data) => {
+
+					this.update(
+						data.progress,
+						data.message
+					);
+
+					/*
+					* Installation completed.
+					*/
+
+					if (data.progress >= 100) {
+
+						this.success(
+							data.message
+						);
+
+						return;
+					}
+
+					/*
+					* Backend reports failure.
+					*
+					* Convention:
+					* progress < 0
+					*/
+
+					if (data.progress < 0) {
+
+						this.error(
+							data.message
+						);
+
+					}
+
+				}
+			);
+		}
+
+		// ---------------------------------------------------------------------
+		// Public API
+		// ---------------------------------------------------------------------
+
+		start() {
+
+			this.show();
+
+			this.listen();
+
+			this.update(
+				0,
+				__("Preparing installation...")
+			);
+		}
+	};
+});

@@ -9,25 +9,30 @@ to switch repositories or branches later.
 # GitHub Repository
 # -----------------------------------------------------------------------------
 
-DEMO_REPOSITORY_OWNER = "lmnaslimited"
+# Fixed scalar constant defining the GitHub repository owner name
+L_demo_repository_owner = "lmnaslimited"
 
-DEMO_REPOSITORY_NAME = "brandkit-demo-data"
+# Fixed scalar constant defining the target GitHub repository identifier
+L_demo_repository_name = "brandkit-demo-data"
 
-DEMO_REPOSITORY_BRANCH = "main"
+# Fixed scalar constant pointing to the development or production branch resource path
+L_demo_repository_branch = "main"
 
 # -----------------------------------------------------------------------------
 # Raw GitHub URL
 # -----------------------------------------------------------------------------
 
-RAW_BASE_URL = (
+# Fixed scalar base path string dynamically constructed for remote requests
+L_raw_base_url = (
     "https://raw.githubusercontent.com/"
-    f"{DEMO_REPOSITORY_OWNER}/"
-    f"{DEMO_REPOSITORY_NAME}/"
-    f"{DEMO_REPOSITORY_BRANCH}"
+    f"{L_demo_repository_owner}/"
+    f"{L_demo_repository_name}/"
+    f"{L_demo_repository_branch}"
 )
 
 # -----------------------------------------------------------------------------
 # Cache Directory
 # -----------------------------------------------------------------------------
 
-CACHE_FOLDER = "demo-data"
+# Fixed scalar string defining the local caching directory destination name
+L_cache_folder = "demo-data"

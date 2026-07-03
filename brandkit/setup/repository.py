@@ -14,130 +14,124 @@ import frappe
 import requests
 
 from brandkit.setup.constants import (
-    CACHE_FOLDER,
-    RAW_BASE_URL,
+    L_cache_folder,
+    L_raw_base_url,
 )
 
 from brandkit.setup.exceptions import (
-    DemoFileNotFoundError,
-    ManifestNotFoundError,
+    cl_demo_file_not_found_error,
+    cl_manifest_not_found_error,
 )
 
+"""
+Downloads and caches demo resources.
+"""
+class cl_demo_repository:
 
-class DemoRepository:
-    """
-    Downloads and caches demo resources.
-    """
+    def __init__(self, i_industry: str):
 
-    def __init__(self, industry: str):
+        self.l_industry = i_industry.lower()
 
-        self.industry = industry.lower()
+        self.l_base_url = f"{L_raw_base_url}/{self.l_industry}"
 
-        self.base_url = f"{RAW_BASE_URL}/{self.industry}"
-
-        self.cache_root = Path(
+        self.l_cache_root = Path(
             frappe.get_site_path(
                 "private",
                 "files",
-                CACHE_FOLDER,
-                self.industry,
+                L_cache_folder,
+                self.l_industry,
             )
         )
 
-    # -------------------------------------------------------------------------
+    """
+    Return the industry's manifest.
 
+    Downloads it if not already cached.
+    """
     def get_manifest(self) -> dict:
-        """
-        Return the industry's manifest.
 
-        Downloads it if not already cached.
-        """
+        l_path = self.download("manifest.json")
 
-        path = self.download("manifest.json")
-
-        with open(path, encoding="utf-8") as file:
+        with open(l_path, encoding="utf-8") as file:
             return json.load(file)
 
-    # -------------------------------------------------------------------------
+    """
+    Download a file if it doesn't already exist.
+    """
+    def download(self, i_relative_path: str) -> Path:
 
-    def download(self, relative_path: str) -> Path:
-        """
-        Download a file if it doesn't already exist.
-        """
+        # Local scalar instance representing targeted download track
+        l_local_file = self.l_cache_root / i_relative_path
 
-        local_file = self.cache_root / relative_path
+        if l_local_file.exists():
+            return l_local_file
 
-        if local_file.exists():
-            return local_file
+        # remote target URL address
+        l_url = f"{self.l_base_url}/{i_relative_path}"
 
-        url = f"{self.base_url}/{relative_path}"
+        # Dictionary-like request response object tracking remote status
+        ld_response = requests.get(l_url, timeout=60)
 
-        response = requests.get(url, timeout=60)
+        if ld_response.status_code == 404:
 
-        if response.status_code == 404:
+            if i_relative_path == "manifest.json":
+                raise cl_manifest_not_found_error(l_url)
 
-            if relative_path == "manifest.json":
-                raise ManifestNotFoundError(url)
+            raise cl_demo_file_not_found_error(l_url)
 
-            raise DemoFileNotFoundError(url)
+        ld_response.raise_for_status()
 
-        response.raise_for_status()
-
-        local_file.parent.mkdir(
+        l_local_file.parent.mkdir(
             parents=True,
             exist_ok=True,
         )
 
-        local_file.write_bytes(response.content)
+        l_local_file.write_bytes(ld_response.content)
 
-        return local_file
+        return l_local_file
 
-    # -------------------------------------------------------------------------
-
+    """
+    Download every JSON file declared in manifest.
+    """
     def download_from_manifest(self):
-        """
-        Download every JSON file declared in manifest.
-        """
+        # Dictionary container capturing manifest structures
+        ld_manifest = self.get_manifest()
 
-        manifest = self.get_manifest()
-
-        for file_info in manifest.get("masters", []):
+        # Dictionary looping through metadata elements in masters key
+        for ld_file_info in ld_manifest.get("masters", []):
 
             self.download(
-                f"masters/{file_info['file']}"
+                f"masters/{ld_file_info['file']}"
             )
 
-        for file_info in manifest.get("transactions", []):
+        # Dictionary looping through transactions elements
+        for ld_file_info in ld_manifest.get("transactions", []):
 
             self.download(
-                f"transactions/{file_info['file']}"
+                f"transactions/{ld_file_info['file']}"
             )
-
-    # -------------------------------------------------------------------------
 
     def cached_manifest_path(self) -> Path:
 
-        return self.cache_root / "manifest.json"
-
-    # -------------------------------------------------------------------------
+        return self.l_cache_root / "manifest.json"
 
     def clear_cache(self):
 
-        if self.cache_root.exists():
+        if self.l_cache_root.exists():
 
             import shutil
 
-            shutil.rmtree(self.cache_root)
+            shutil.rmtree(self.l_cache_root)
 
+    """
+    Return all industries available in the demo repository.
+    """
     @staticmethod
     def get_available_industries():
-        """
-        Return all industries available in the demo repository.
-        """
+        # Local scalar tracking the remote global industry list endpoint
+        l_url = f"{L_raw_base_url}/industries.json"
+        # Dictionary-like response tracking server status output data
+        ld_response = requests.get(l_url, timeout=30)
+        ld_response.raise_for_status()
 
-        url = f"{RAW_BASE_URL}/industries.json"
-
-        response = requests.get(url, timeout=30)
-        response.raise_for_status()
-
-        return response.json()
+        return ld_response.json()

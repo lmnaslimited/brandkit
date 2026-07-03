@@ -16,11 +16,11 @@ No importing happens here yet.
 import frappe
 
 from brandkit.setup.progress import update_progress
-from brandkit.setup.repository import DemoRepository
-from brandkit.setup.importer import DemoImporter
+from brandkit.setup.repository import cl_demo_repository
+from brandkit.setup.importer import cl_demo_importer
 
 
-class DemoDataFactory:
+class cl_demo_data_factory:
     """
     Coordinates the demo data installation process.
 
@@ -32,68 +32,74 @@ class DemoDataFactory:
     """
 
     @staticmethod
-    def run(industry: str, show_progress: bool = True):
+    def run(i_industry: str, i_show_progress: bool = True):
         """
         Entry point for installing demo data.
 
         Parameters
         ----------
-        industry : str
+        i_industry : str
             Industry selected by the user.
+        i_show_progress : bool
+            Whether to broadcast progress metrics.
         """
 
-        factory = DemoDataFactory()
+        # Dictionary-like reference mapping the local factory engine instance
+        ld_factory = cl_demo_data_factory()
 
         # Initialize the installer
-        factory.initialize(
-            industry=industry,
-            show_progress=show_progress,
+        ld_factory.initialize(
+            i_industry=i_industry,
+            i_show_progress=i_show_progress,
         )
 
         # Skip installation if demo data already exists
-        if factory.demo_exists():
+        if ld_factory.demo_exists():
             update_progress("Demo data is already installed.", 100)
             return
 
         # Validate existing transaction data
-        factory.validate_transaction_data()
+        ld_factory.validate_transaction_data()
+        
         # ------------------------------------------------------------------
         # Download and cache all demo resources from the repository
         # ------------------------------------------------------------------
-        if factory.show_progress:
+        if ld_factory.l_show_progress:
             update_progress("Downloading demo resources...", 20)
 
-        factory.repository.download_from_manifest()
+        ld_factory.ld_repository.download_from_manifest()
 
         frappe.enqueue(
             method="brandkit.setup.importer.import_master_documents",
             queue="long",
             timeout=7200,
-            industry=factory.industry,
-            show_progress=factory.show_progress,
+            i_industry=ld_factory.l_industry,
+            i_show_progress=ld_factory.l_show_progress,
         )
 
-    def initialize(self, industry: str, show_progress: bool = True):
+    def initialize(self, i_industry: str, i_show_progress: bool = True):
         """
         Initialize the installer context.
 
         Parameters
         ----------
-        industry : str
+        i_industry : str
             Selected industry.
+        i_show_progress : bool
+            Whether progress alerts are shown.
         """
 
-        self.show_progress = show_progress
+        self.l_show_progress = i_show_progress
         # Store selected industry for later use
-        self.industry = industry.lower()
+        self.l_industry = i_industry.lower()
 
-        # Create repository client
-        self.repository = DemoRepository(self.industry)
+        # Create repository client instance mapping
+        self.ld_repository = cl_demo_repository(self.l_industry)
 
-        # Download/load manifest
-        self.manifest = self.repository.get_manifest()
-        self.importer = DemoImporter(
-            self.repository
+        # Download/load manifest dictionary structure
+        self.ld_manifest = self.ld_repository.get_manifest()
+        self.ld_importer = cl_demo_importer(
+            self.ld_repository
         )
 
     def demo_exists(self) -> bool:
@@ -117,18 +123,20 @@ class DemoDataFactory:
         industry's manifest are checked.
         """
 
-        for transaction in self.manifest.get("transactions", []):
+        # Looping through configuration files using an iterative record dictionary
+        for ld_transaction in self.ld_manifest.get("transactions", []):
 
-            doctype = transaction.get("doctype")
+            # Scalar property representing the targets core record configuration type
+            l_doctype = ld_transaction.get("doctype")
 
-            if not doctype:
+            if not l_doctype:
                 continue
 
-            if frappe.db.count(doctype):
+            if frappe.db.count(l_doctype):
 
                 frappe.throw(
                     (
-                        f"Transaction data already exists for <b>{doctype}</b>.<br><br>"
+                        f"Transaction data already exists for <b>{l_doctype}</b>.<br><br>"
                         "Please delete the existing transaction data first.<br><br>"
                         "Go to <b>Company → Click Manage → Delete Transactions</b> "
                         "and remove the transactions before installing "

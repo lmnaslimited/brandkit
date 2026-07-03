@@ -10,7 +10,7 @@ $(() => {
     /**
      * Demo Banner
      */
-    brandkit.demo.Banner = class Banner {
+    brandkit.demo.clBanner = class clBanner {
 
         //------------------------------------------------------------------
         // Constructor
@@ -19,24 +19,24 @@ $(() => {
         constructor() {
 
             /**
-             * Backend state.
+             * Backend state dictionary tracking configuration values.
              */
-            this.state = null;
+            this.ldState = null;
 
             /**
-             * Banner DOM.
+             * Banner DOM dictionary elements context tracking wrapper.
              */
             this.$banner = null;
 
             /**
-             * Progress dialog.
+             * Progress dialog reference tracking status.
              */
-            this.progress_dialog = null;
+            this.ldProgressDialog = null;
 
             /**
-             * Prevent duplicate rendering.
+             * Prevent duplicate rendering state flag scalar.
              */
-            this.rendered = false;
+            this.lRendered = false;
         }
 
         //------------------------------------------------------------------
@@ -50,7 +50,7 @@ $(() => {
             */
 
             if ($("#brandkit-demo-toast").length) {
-                this.rendered = true;
+                this.lRendered = true;
                 return;
             }
             
@@ -60,13 +60,13 @@ $(() => {
 
             await this.load_state();
 
-            if (!this.state || !this.state.show_banner) {
+            if (!this.ldState || !this.ldState.show_banner) {
                 return;
             }
 
             this.render();
             this.bind_events();
-            this.rendered = true;
+            this.lRendered = true;
         }
 
         //------------------------------------------------------------------
@@ -74,10 +74,11 @@ $(() => {
         //------------------------------------------------------------------
 
         async load_state() {
-            const response = await frappe.call({
+            // Constant dictionary object tracking server response data metrics
+            const LdResponse = await frappe.call({
                 method: "brandkit.api.demo.get_demo_banner_state",
             });
-            this.state = response.message;
+            this.ldState = LdResponse.message;
         }
 
         //------------------------------------------------------------------
@@ -85,34 +86,26 @@ $(() => {
         //------------------------------------------------------------------
 
         render() {
-
-            /*
-            * Prevent duplicate DOM.
-            */
-
+            // Prevent duplicate DOM.
             if ($("#brandkit-demo-toast").length) {
                 return;
             }
 
-            /*
-            * Build Industry options.
-            */
-
-            const options = this.state.industries
-                .map(industry => {
+            // Build Industry options.
+            // Constant scalar layout string collecting options mapping records
+            const LOptions = this.ldState.industries
+                .map(idIndustry => {
                     return `
-                        <option value="${industry.id}">
-                            ${industry.title}
+                        <option value="${idIndustry.id}">
+                            ${idIndustry.title}
                         </option>
                     `;
                 })
                 .join("");
 
-            /*
-            * Floating card.
-            */
-
-            const html = `
+            // Floating card.
+            // Constant scalar string mapping layout template view structure
+            const LHtml = `
             <div id="brandkit-demo-toast" class="brandkit-demo-toast">
                 <div class="brandkit-demo-header">
                     <div class="brandkit-demo-title">
@@ -132,7 +125,7 @@ $(() => {
                         <option value="">
                             Select Industry
                         </option>
-                        ${options}
+                        ${LOptions}
                     </select>
                     <button class="btn btn-primary btn-block" id="brandkit-demo-install">
                         Setup Demo Data
@@ -141,7 +134,7 @@ $(() => {
             </div>
             `;
 
-            this.$banner = $(html);
+            this.$banner = $(LHtml);
 
             /*
             * Append directly to BODY.
@@ -153,11 +146,8 @@ $(() => {
 
             $("body").append(this.$banner);
 
-            /*
-            * Progress dialog.
-            */
-
-            this.progress_dialog = new brandkit.demo.ProgressDialog();
+            // Progress dialog.
+            this.ldProgressDialog = new brandkit.demo.clProgressDialog();
         }
 
         //------------------------------------------------------------------
@@ -165,10 +155,7 @@ $(() => {
         //------------------------------------------------------------------
 
         bind_events() {
-            //--------------------------------------------------------------
             // Setup Demo
-            //--------------------------------------------------------------
-
             this.$banner
                 .find("#brandkit-demo-install")
                 .off("click")
@@ -178,10 +165,7 @@ $(() => {
 
                 });
 
-            //--------------------------------------------------------------
-            // Close
-            //--------------------------------------------------------------
-
+            // Close Banner
             this.$banner
                 .find("#brandkit-demo-close")
                 .off("click")
@@ -192,10 +176,7 @@ $(() => {
                 });
         }
 
-        //------------------------------------------------------------------
-        // Close
-        //------------------------------------------------------------------
-
+        // Close function for the Banner
         close() {
             if (!this.$banner) {
                 return;
@@ -203,20 +184,18 @@ $(() => {
 
             this.$banner.remove();
             this.$banner = null;
-            this.rendered = false;
+            this.lRendered = false;
             sessionStorage.setItem("brandkit_demo_banner_closed", "1");
         }
 
-        //------------------------------------------------------------------
         // Setup Demo
-        //------------------------------------------------------------------
-
         async setup_demo_data() {
-            const industry = this.$banner
+            // Constant scalar capture checking currently assigned select menu configurations
+            const LIndustry = this.$banner
                 .find("#brandkit-demo-industry")
                 .val();
 
-            if (!industry) {
+            if (!LIndustry) {
                 frappe.msgprint({
                     title: __("Industry Required"),
                     message: __("Please select an industry."),
@@ -226,17 +205,18 @@ $(() => {
             }
 
             this.disable_controls();
-            this.progress_dialog.start();
+            this.ldProgressDialog.start();
 
             try {
                 await frappe.call({
                     method: "brandkit.api.demo.setup_demo_data",
-                    args: { industry: industry },
+                    args: { i_industry: LIndustry },
                 });
             }
-            catch (error) {
-                console.error(error);
-                this.progress_dialog.error(
+            // Dictionary object detailing exception states handled inside loop execution block
+            catch (ldError) {
+                console.error(ldError);
+                this.ldProgressDialog.error(
                     __("Unable to start demo installation.")
                 );
                 this.enable_controls();
@@ -280,11 +260,10 @@ $(() => {
 
     brandkit.demo.initialize = async function () {
 
-		/*
-        * DO NOT show the banner if the user is in the Setup Wizard.
-        */
-        const current_route = frappe.get_route();
-        if (current_route && current_route[0] === "setup-wizard") {
+        // DO NOT show the banner if the user is in the Setup Wizard.
+        // Constant array reference tracking navigation context tracks
+        const LaCurrentRoute = frappe.get_route();
+        if (LaCurrentRoute && LaCurrentRoute[0] === "setup-wizard") {
             return;
         }
 
@@ -294,13 +273,10 @@ $(() => {
         */
 
         if (!brandkit.demo.banner) {
-            brandkit.demo.banner = new brandkit.demo.Banner();
+            brandkit.demo.banner = new brandkit.demo.clBanner();
         }
 
-        /*
-        * Banner already exists in DOM.
-        */
-
+        // Banner already exists in DOM.
         if ($("#brandkit-demo-toast").length) {
             return;
         }
@@ -308,8 +284,9 @@ $(() => {
         try {
             await brandkit.demo.banner.init();
         }
-        catch (error) {
-            console.error("BrandKit Demo Banner Error:", error);
+        // Dictionary execution handler capturing global context tracing errors
+        catch (ldError) {
+            console.error("BrandKit Demo Banner Error:", ldError);
         }
     };
 
@@ -317,34 +294,25 @@ $(() => {
     // Realtime Progress Listener
     // ---------------------------------------------------------------------
 
-    frappe.realtime.on("brandkit_demo_progress", (data) => {
-        const banner = brandkit.demo.banner;
+    frappe.realtime.on("brandkit_demo_progress", (idData) => {
+        // Constant dictionary element mapping workspace setup tracks
+        const LdBanner = brandkit.demo.banner;
 
-        if (!banner || !banner.progress_dialog) {
+        if (!LdBanner || !LdBanner.ldProgressDialog) {
             return;
         }
 
-        /*
-        * Update Progress Dialog.
-        */
+        // Update Progress Dialog.
+        LdBanner.ldProgressDialog.update(idData.progress, idData.message);
 
-        banner.progress_dialog.update(data.progress, data.message);
-
-        /*
-        * Installation finished.
-        */
-
-        if (data.progress >= 100) {
+        // Installation finished.
+        if (idData.progress >= 100) {
             setTimeout(() => {
-                /*
-                * Hide progress dialog.
-                */
-                banner.progress_dialog.hide();
+                // Hide progress dialog.
+                LdBanner.ldProgressDialog.hide();
 
-                /*
-                * Remove banner.
-                */
-                banner.close();
+                // Remove banner.
+                LdBanner.close();
 
                 frappe.show_alert({
                     message: __("Demo data installed successfully."),

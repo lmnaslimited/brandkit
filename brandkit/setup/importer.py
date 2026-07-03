@@ -10,7 +10,7 @@ Responsibilities
 
 This module does not download any files.
 Downloaded resources are read from the local cache created
-by DemoRepository.
+by cl_demo_repository.
 """
 
 from __future__ import annotations
@@ -20,58 +20,61 @@ import json
 import frappe
 
 from brandkit.setup.progress import update_progress
-from brandkit.setup.repository import DemoRepository
+from brandkit.setup.repository import cl_demo_repository
 
 
-class DemoImporter:
+class cl_demo_importer:
     """
     Generic importer for cached demo JSON files.
     """
 
-    def __init__(self, repository):
+    def __init__(self, id_repository):
 
-        self.repository = repository
-        self.cache_root = repository.cache_root
-        self.manifest = repository.get_manifest()
-
+        self.ld_repository = id_repository
+        self.l_cache_root = id_repository.l_cache_root
+        self.ld_manifest = id_repository.get_manifest()
 
     # -------------------------------------------------------------------------
 
-    def import_file(self, folder: str, filename: str, submit=False):
+    def import_file(self, i_folder: str, i_filename: str, i_submit=False):
         """
         Import all records from a cached JSON file.
         """
 
-        file_path = self.cache_root / folder / filename
+        # Scalar variable path construction mapping the target local file context
+        l_file_path = self.l_cache_root / i_folder / i_filename
 
-        if not file_path.exists():
-            frappe.throw(f"Demo file not found:\n{file_path}")
+        if not l_file_path.exists():
+            frappe.throw(f"Demo file not found:\n{l_file_path}")
 
-        with open(file_path, encoding="utf-8") as file:
-            records = json.load(file)
+        with open(l_file_path, encoding="utf-8") as file:
+            # Array block loading parsed dictionary components from source file
+            la_records = json.load(file)
 
-        for record in records:
-            self.import_doc(record, submit)
+        # Dictionary instance reference tracking an entry row during process loops
+        for ld_record in la_records:
+            self.import_doc(ld_record, i_submit)
 
         frappe.db.commit()
 
     # -------------------------------------------------------------------------
 
-    def import_doc(self, record: dict, submit=False):
+    def import_doc(self, id_record: dict, i_submit=False):
         """
         Import a single document.
         """
 
-        if self.document_exists(record):
+        if self.document_exists(id_record):
             return
 
-        doc = frappe.get_doc(record)
+        # Dictionary document reference fetching the mapped data object model
+        ld_doc = frappe.get_doc(id_record)
 
-        doc.insert(
+        ld_doc.insert(
             ignore_permissions=True,
         )
-        if submit and doc.docstatus == 0:
-            doc.submit()
+        if i_submit and ld_doc.docstatus == 0:
+            ld_doc.submit()
 
     # -------------------------------------------------------------------------
 
@@ -79,7 +82,7 @@ class DemoImporter:
     # Composite uniqueness rules
     # -------------------------------------------------------------------------
 
-    COMPOSITE_UNIQUE_FIELDS = {
+    Ld_composite_unique_fields = {
         "Warehouse": (
             "warehouse_name",
             "company",
@@ -89,7 +92,8 @@ class DemoImporter:
             "price_list",
         ),
     }
-    def document_exists(self, record: dict) -> bool:
+
+    def document_exists(self, id_record: dict) -> bool:
         """
         Determine whether a document already exists.
 
@@ -101,28 +105,31 @@ class DemoImporter:
             4. Autoname field
         """
 
-        doctype = record["doctype"]
+        # Scalar tracker representing targeted field metadata layout context
+        l_doctype = id_record["doctype"]
 
         # ------------------------------------------------------------------
         # Composite uniqueness rules
         # ------------------------------------------------------------------
 
-        if doctype in self.COMPOSITE_UNIQUE_FIELDS:
+        if l_doctype in self.Ld_composite_unique_fields:
 
-            filters = {}
+            # Dictionary query configuration holding dynamic key parameters
+            ld_filters = {}
 
-            for field in self.COMPOSITE_UNIQUE_FIELDS[doctype]:
-                value = record.get(field)
+            for l_field in self.Ld_composite_unique_fields[l_doctype]:
+                # Scalar value parsing metadata values inside configuration
+                l_value = id_record.get(l_field)
 
-                if value is None:
+                if l_value is None:
                     return False
 
-                filters[field] = value
+                ld_filters[l_field] = l_value
 
             return bool(
                 frappe.db.exists(
-                    doctype,
-                    filters,
+                    l_doctype,
+                    ld_filters,
                 )
             )
 
@@ -130,11 +137,11 @@ class DemoImporter:
         # Explicit document name
         # ------------------------------------------------------------------
 
-        if record.get("name"):
+        if id_record.get("name"):
             return bool(
                 frappe.db.exists(
-                    doctype,
-                    record["name"],
+                    l_doctype,
+                    id_record["name"],
                 )
             )
 
@@ -142,18 +149,20 @@ class DemoImporter:
         # Title field
         # ------------------------------------------------------------------
 
-        meta = frappe.get_meta(doctype)
+        # Dictionary tracking target metadata blueprint schema structures
+        ld_meta = frappe.get_meta(l_doctype)
 
-        if meta.title_field:
+        if ld_meta.title_field:
 
-            value = record.get(meta.title_field)
+            # Scalar structural variable checking schema validation title rules
+            l_value = id_record.get(ld_meta.title_field)
 
-            if value:
+            if l_value:
                 return bool(
                     frappe.db.exists(
-                        doctype,
+                        l_doctype,
                         {
-                            meta.title_field: value,
+                            ld_meta.title_field: l_value,
                         },
                     )
                 )
@@ -163,20 +172,22 @@ class DemoImporter:
         # ------------------------------------------------------------------
 
         if (
-            meta.autoname
-            and meta.autoname.startswith("field:")
+            ld_meta.autoname
+            and ld_meta.autoname.startswith("field:")
         ):
 
-            fieldname = meta.autoname.split(":", 1)[1]
+            # Scalar identifier holding explicit naming string properties
+            l_fieldname = ld_meta.autoname.split(":", 1)[1]
 
-            value = record.get(fieldname)
+            # Scalar parameter variable recording custom naming content fields
+            l_value = id_record.get(l_fieldname)
 
-            if value:
+            if l_value:
                 return bool(
                     frappe.db.exists(
-                        doctype,
+                        l_doctype,
                         {
-                            fieldname: value,
+                            l_fieldname: l_value,
                         },
                     )
                 )
@@ -190,34 +201,43 @@ class DemoImporter:
 
 
 @frappe.whitelist()
-def import_master_documents(industry: str, show_progress: bool = True):
+def import_master_documents(i_industry: str, i_show_progress: bool = True):
     try:
-        repository = DemoRepository(industry)
-        importer = DemoImporter(repository)
-        manifest = repository.get_manifest()
+        # Dictionary-like class instance referencing the repository module engine
+        ld_repository = cl_demo_repository(i_industry)
+        
+        # Dictionary-like class instance targeting the file import execution module
+        ld_importer = cl_demo_importer(ld_repository)
+        
+        # Dictionary asset capturing complete dataset deployment schemas
+        ld_manifest = ld_repository.get_manifest()
 
-        masters = manifest.get("masters", [])
-        total = len(masters)
+        # Array stack aggregating master definition target datasets
+        la_masters = ld_manifest.get("masters", [])
+        
+        # Scalar number capturing total dataset processing lengths
+        l_total = len(la_masters)
 
-        for index, file_info in enumerate(masters, start=1):
-            if show_progress:
+        # Dictionary iterator accessing nested execution element fields
+        for l_index, ld_file_info in enumerate(la_masters, start=1):
+            if i_show_progress:
                 update_progress(
-                    f"Importing {file_info['doctype']}...",
-                    30 + int(index / max(total, 1) * 30),
+                    f"Importing {ld_file_info['doctype']}...",
+                    30 + int(l_index / max(l_total, 1) * 30),
                 )
 
-            importer.import_file(
-                folder="masters",
-                filename=file_info["file"],
-                submit=file_info.get("submit", False),
+            ld_importer.import_file(
+                i_folder="masters",
+                i_filename=ld_file_info["file"],
+                i_submit=ld_file_info.get("submit", False),
             )
 
         frappe.enqueue(
             method="brandkit.setup.importer.import_transaction_documents",
             queue="long",
             timeout=7200,
-            industry=industry,
-            show_progress=show_progress,
+            i_industry=i_industry,
+            i_show_progress=i_show_progress,
         )
 
     except Exception as e:
@@ -226,7 +246,7 @@ def import_master_documents(industry: str, show_progress: bool = True):
             "BrandKit Demo Import"
         )
 
-        if show_progress:
+        if i_show_progress:
             update_progress(
                 f"Installation failed.<br>{frappe.utils.escape_html(str(e))}",
                 -1,
@@ -234,45 +254,51 @@ def import_master_documents(industry: str, show_progress: bool = True):
 
         raise
 
+
 @frappe.whitelist()
-def import_transaction_documents(industry: str, show_progress: bool = True):
+def import_transaction_documents(i_industry: str, i_show_progress: bool = True):
     """
     Background job that imports all transaction documents.
     """
     try:
+        # Dictionary-like class instance tracking workspace repository references
+        ld_repository = cl_demo_repository(i_industry)
 
-        repository = DemoRepository(industry)
+        # Dictionary-like class instance targeting data entry framework engine
+        ld_importer = cl_demo_importer(ld_repository)
 
-        importer = DemoImporter(repository)
+        # Dictionary metadata context loading deployment instruction files
+        ld_manifest = ld_repository.get_manifest()
 
-        manifest = repository.get_manifest()
+        # Array configuration lists keeping transaction tracking metrics
+        la_transactions = ld_manifest.get("transactions", [])
 
-        transactions = manifest.get("transactions", [])
+        # Scalar counting maximum record quantities to loop over
+        l_total = len(la_transactions)
 
-        total = len(transactions)
+        # Dictionary iteration elements processing system table inputs
+        for l_index, ld_file_info in enumerate(la_transactions, start=1):
 
-        for index, file_info in enumerate(transactions, start=1):
-
-            if show_progress:
+            if i_show_progress:
                 update_progress(
-                    f"Importing {file_info['doctype']}...",
-                    60 + int(index / max(total, 1) * 35),
+                    f"Importing {ld_file_info['doctype']}...",
+                    60 + int(l_index / max(l_total, 1) * 35),
                 )
 
-            importer.import_file(
-                folder="transactions",
-                filename=file_info["file"],
-                submit=file_info.get("submit", False),
+            ld_importer.import_file(
+                i_folder="transactions",
+                i_filename=ld_file_info["file"],
+                i_submit=ld_file_info.get("submit", False),
             )
 
-        finish_installation(industry, show_progress)
+        finish_installation(i_industry, i_show_progress)
     except Exception as e:
         frappe.log_error(
             frappe.get_traceback(),
             "BrandKit Demo Import"
         )
 
-        if show_progress:
+        if i_show_progress:
             update_progress(
                 f"Installation failed.<br>{frappe.utils.escape_html(str(e))}",
                 -1,
@@ -286,21 +312,22 @@ def import_transaction_documents(industry: str, show_progress: bool = True):
 # =============================================================================
 
 
-def finish_installation(industry: str, show_progress: bool = True):
+def finish_installation(i_industry: str, i_show_progress: bool = True):
     """
     Mark the demo installation as completed.
     """
 
-    settings = frappe.get_single("BrandKit Settings")
+    # Dictionary application wrapper capturing configuration states
+    ld_settings = frappe.get_single("BrandKit Settings")
 
-    settings.demo_installed = 1
-    settings.demo_industry = industry
+    ld_settings.demo_installed = 1
+    ld_settings.demo_industry = i_industry
 
-    settings.save(ignore_permissions=True)
+    ld_settings.save(ignore_permissions=True)
 
     frappe.db.commit()
 
-    if show_progress:
+    if i_show_progress:
         update_progress(
             "Demo setup completed.",
             100,

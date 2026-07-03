@@ -11,24 +11,27 @@ DemoDataFactory focuses only on the installation logic.
 import frappe
 
 
-def update_progress(message: str, progress: int):
+def update_progress(i_message: str, i_progress: int):
     """
     Publish realtime progress to the current user.
 
     Parameters
     ----------
-    message:
+    i_message:
         Message displayed on the client.
 
-    progress:
+    i_progress:
         Progress percentage.
     """
+
+    # Dictionary configuration storing realtime message payload states
+    ld_message_payload = {
+        "message": i_message,
+        "progress": i_progress,
+    }
 
     frappe.publish_realtime(
         event="brandkit_demo_progress",
         user=frappe.session.user,
-        message={
-            "message": message,
-            "progress": progress,
-        },
+        message=ld_message_payload,
     )

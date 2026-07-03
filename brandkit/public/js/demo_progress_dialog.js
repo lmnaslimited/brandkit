@@ -24,37 +24,27 @@ $(() => {
 	/**
 	 * Progress Dialog
 	 */
-	brandkit.demo.ProgressDialog = class ProgressDialog {
+	brandkit.demo.clProgressDialog = class clProgressDialog {
 
 		/**
 		 * Constructor
 		 */
 		constructor() {
 
-			/**
-			 * Frappe Dialog instance.
-			 */
-			this.dialog = null;
+			// Frappe Dialog instance.
+			this.ldDialog = null;
 
-			/**
-			 * Progress bar element.
-			 */
-			this.$progress_fill = null;
+			// Progress bar element.
+			this.$lProgressFill = null;
 
-			/**
-			 * Percentage label.
-			 */
-			this.$progress_percent = null;
+			// Percentage label.
+			this.$lProgressPercent = null;
 
-			/**
-			 * Current status message.
-			 */
-			this.$message = null;
+			// Current status message.
+			this.$lMessage = null;
 
-			/**
-			 * Whether dialog has been created.
-			 */
-			this.initialized = false;
+			// Whether dialog has been created.
+			this.lInitialized = false;
 		}
 
 		// ---------------------------------------------------------------------
@@ -63,11 +53,11 @@ $(() => {
 
 		show() {
 
-			if (this.initialized) {
+			if (this.lInitialized) {
 				return;
 			}
 
-			this.dialog = new frappe.ui.Dialog({
+			this.ldDialog = new frappe.ui.Dialog({
 				title: __("Installing Demo Data"),
 				size: "small",
 				static: true,
@@ -83,24 +73,24 @@ $(() => {
 				},
 			});
 
-			this.dialog.show();
+			this.ldDialog.show();
 
-			this.dialog.set_df_property(
+			this.ldDialog.set_df_property(
 				"progress_html",
 				"options",
-				this.get_html()
+				this.getHtml()
 			);
 
-			this.cache_elements();
+			this.cacheElements();
 
-			this.initialized = true;
+			this.lInitialized = true;
 		}
 
 		// ---------------------------------------------------------------------
 		// HTML Template
 		// ---------------------------------------------------------------------
 
-		get_html() {
+		getHtml() {
 
 			return `
 
@@ -138,25 +128,25 @@ $(() => {
 		// Cache DOM Elements
 		// ---------------------------------------------------------------------
 
-		cache_elements() {
+		cacheElements() {
 
-			const wrapper =
-				this.dialog.fields_dict
+			const LdWrapper =
+				this.ldDialog.fields_dict
 					.progress_html
 					.$wrapper;
 
-			this.$progress_fill =
-				wrapper.find(
+			this.$lProgressFill =
+				LdWrapper.find(
 					".brandkit-progress-fill"
 				);
 
-			this.$progress_percent =
-				wrapper.find(
+			this.$lProgressPercent =
+				LdWrapper.find(
 					".brandkit-progress-percent"
 				);
 
-			this.$message =
-				wrapper.find(
+			this.$lMessage =
+				LdWrapper.find(
 					".brandkit-progress-message"
 				);
 		}
@@ -165,28 +155,28 @@ $(() => {
 		// Update Progress
 		// ---------------------------------------------------------------------
 
-		update(progress, message) {
+		update(iProgress, iMessage) {
 
-			if (!this.initialized) {
+			if (!this.lInitialized) {
 				return;
 			}
 
-			progress = Math.max(
+			iProgress = Math.max(
 				0,
-				Math.min(progress, 100)
+				Math.min(iProgress, 100)
 			);
 
-			this.$progress_fill.css(
+			this.$lProgressFill.css(
 				"width",
-				`${progress}%`
+				`${iProgress}%`
 			);
 
-			this.$progress_percent.text(
-				`${progress}%`
+			this.$lProgressPercent.text(
+				`${iProgress}%`
 			);
 
-			this.$message.text(
-				message
+			this.$lMessage.text(
+				iMessage
 			);
 		}
 
@@ -194,18 +184,18 @@ $(() => {
 		// Success
 		// ---------------------------------------------------------------------
 
-		success(message = __("Demo installation completed.")) {
+		success(iMessage = __("Demo installation completed.")) {
 
 			this.update(
 				100,
-				message
+				iMessage
 			);
-			this.$progress_fill
+			this.$lProgressFill
 				.removeClass("error")
 				.addClass("success");
 
 			frappe.show_alert({
-				message: message,
+				message: iMessage,
 				indicator: "green",
 			});
 
@@ -226,24 +216,24 @@ $(() => {
 		// Failure
 		// ---------------------------------------------------------------------
 
-		error(message) {
+		error(iMessage) {
 
-			this.$progress_fill
+			this.$lProgressFill
 				.removeClass("success")
 				.addClass("error");
 		
 			this.update(
-				this.$progress_percent.text().replace("%", ""),
+				this.$lProgressPercent.text().replace("%", ""),
 				__("Installation failed")
 			);
 		
 			frappe.msgprint({
 				title: __("Installation Failed"),
-				message,
+				message: iMessage,
 				indicator: "red",
 			});
 		
-			this.dialog.get_primary_btn().prop("disabled", false);
+			this.ldDialog.get_primary_btn().prop("disabled", false);
 		}
 
 		// ---------------------------------------------------------------------
@@ -252,13 +242,13 @@ $(() => {
 
 		hide() {
 
-			if (!this.initialized) {
+			if (!this.lInitialized) {
 				return;
 			}
 
-			this.dialog.hide();
+			this.ldDialog.hide();
 
-			this.initialized = false;
+			this.lInitialized = false;
 		}
 
 		// ---------------------------------------------------------------------
@@ -283,21 +273,21 @@ $(() => {
 
 			frappe.realtime.on(
 				"brandkit_demo_progress",
-				(data) => {
+				(idData) => {
 
 					this.update(
-						data.progress,
-						data.message
+						idData.progress,
+						idData.message
 					);
 
 					/*
 					* Installation completed.
 					*/
 
-					if (data.progress >= 100) {
+					if (idData.progress >= 100) {
 
 						this.success(
-							data.message
+							idData.message
 						);
 
 						return;
@@ -310,10 +300,10 @@ $(() => {
 					* progress < 0
 					*/
 
-					if (data.progress < 0) {
+					if (idData.progress < 0) {
 
 						this.error(
-							data.message
+							idData.message
 						);
 
 					}
@@ -329,9 +319,7 @@ $(() => {
 		start() {
 
 			this.show();
-
 			this.listen();
-
 			this.update(
 				0,
 				__("Preparing installation...")

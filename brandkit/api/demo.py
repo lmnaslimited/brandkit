@@ -16,8 +16,8 @@ from __future__ import annotations
 
 import frappe
 
-from brandkit.setup.demo import DemoDataFactory
-from brandkit.setup.repository import DemoRepository
+from brandkit.setup.demo import cl_demo_data_factory
+from brandkit.setup.repository import cl_demo_repository
 
 
 # -------------------------------------------------------------------------
@@ -31,51 +31,50 @@ def get_demo_banner_state():
     Returns whether the demo banner should be displayed.
     """
 
-    settings = frappe.get_single("BrandKit Settings")
+    # Fetching application configurations as a dictionary object
+    ld_settings = frappe.get_single("BrandKit Settings")
 
     return {
         "show_banner": (
             "System Manager" in frappe.get_roles()
-            and not settings.demo_installed
+            and not ld_settings.demo_installed
         ),
-        "installed": settings.demo_installed,
-        "industry": settings.demo_industry,
-        "industries": DemoRepository.get_available_industries(),
+        "installed": ld_settings.demo_installed,
+        "industry": ld_settings.demo_industry,
+        "industries": cl_demo_repository.get_available_industries(),
     }
 
-
-# -------------------------------------------------------------------------
 # Setup Demo Data
-# -------------------------------------------------------------------------
-
-
 @frappe.whitelist()
-def setup_demo_data(industry: str, show_progress: bool = True):
+def setup_demo_data(i_industry: str, i_show_progress: bool = True):
     """
     Start the demo installation.
 
     Parameters
     ----------
-    industry:
+    i_industry:
         Industry selected by the user.
 
-    show_progress:
+    i_show_progress:
         Whether realtime progress events should
         be published to the client.
     """
 
-    if not industry:
+    if not i_industry:
         frappe.throw("Please select an industry.")
 
+    # Initialize local variable from parameter for modification
+    l_show_progress = i_show_progress
+
     # frappe.call() sends everything as strings.
-    if isinstance(show_progress, str):
-        show_progress = show_progress.lower() in (
+    if isinstance(l_show_progress, str):
+        l_show_progress = l_show_progress.lower() in (
             "1",
             "true",
             "yes",
         )
 
-    DemoDataFactory.run(
-        industry=industry,
-        show_progress=show_progress,
+    cl_demo_data_factory.run(
+        i_industry=i_industry,
+        i_show_progress=l_show_progress,
     )

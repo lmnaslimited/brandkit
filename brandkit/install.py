@@ -3,7 +3,7 @@ import frappe
 from frappe.utils.file_manager import save_file
 
 
-def fn_upload_file(i_filename):
+def upload_file(i_filename):
     """
     Locates a file within the app's public/images directory, reads its content,
     and uploads it to Frappe's file manager system as a public file.
@@ -37,28 +37,28 @@ def fn_upload_file(i_filename):
     return l_file_doc.file_url
 
 
-def fn_after_install():
+def after_install():
     """
     Frappe hook function that executes automatically after the application is installed.
     It triggers the configuration setup for both Website and Navbar settings.
     """
     # Execute the setup for system website branding and configurations
-    fn_set_website_settings()
+    set_website_settings()
     
     # Execute the setup for top navigation bar branding
-    fn_set_navbar_settings()
+    set_navbar_settings()
 
 
-def fn_set_website_settings():
+def set_website_settings():
     """
     Uploads the necessary branding assets and updates Frappe's 
     'Website Settings' Single DocType with the new identity config.
     """
     # Upload the 'lensicon.png' for various UI components and store their public URLs
-    l_favicon = fn_upload_file("lensicon.png")
-    l_banner = fn_upload_file("lensicon.png")
-    l_splash = fn_upload_file("lensicon.png")
-    l_app_logo = fn_upload_file("lensicon.png")
+    l_favicon = upload_file("lensicon.png")
+    l_banner = upload_file("lensicon.png")
+    l_splash = upload_file("lensicon.png")
+    l_app_logo = upload_file("lensicon.png")
 
     # Fetch the Single DocType instance for 'Website Settings' to modify global portal UI
     ld_settings = frappe.get_single("Website Settings")
@@ -79,13 +79,13 @@ def fn_set_website_settings():
     frappe.db.commit()
 
 
-def fn_set_navbar_settings():
+def set_navbar_settings():
     """
     Uploads the navbar logo asset and updates Frappe's 
     'Navbar Settings' Single DocType configuration.
     """
     # Upload the 'lensicon.png' to use specifically as the Navigation Bar logo
-    l_app_logo = fn_upload_file("lensicon.png")
+    l_app_logo = upload_file("lensicon.png")
 
     # Fetch the Single DocType instance for 'Navbar Settings' to modify global header UI
     ld_navbar = frappe.get_single("Navbar Settings")

@@ -16,12 +16,39 @@ by cl_demo_repository.
 from __future__ import annotations
 
 import json
-
+from frappe.utils import add_months
 import frappe
 
 from brandkit.setup.progress import update_progress
 from brandkit.setup.repository import cl_demo_repository
 
+from erpnext.buying.doctype.purchase_order.purchase_order import (
+    make_purchase_receipt,
+)
+
+from erpnext.stock.doctype.purchase_receipt.purchase_receipt import (
+    make_purchase_invoice,
+)
+
+from erpnext.selling.doctype.quotation.quotation import (
+    make_sales_order,
+)
+
+from erpnext.selling.doctype.sales_order.sales_order import (
+    make_delivery_note,
+)
+
+from erpnext.stock.doctype.delivery_note.delivery_note import (
+    make_sales_invoice,
+)
+
+from erpnext.accounts.doctype.payment_entry.payment_entry import (
+    get_payment_entry,
+)
+
+from erpnext.manufacturing.doctype.work_order.work_order import (
+    make_stock_entry
+)
 
 class cl_demo_importer:
     """
@@ -36,7 +63,14 @@ class cl_demo_importer:
 
     # -------------------------------------------------------------------------
 
-    def import_file(self, i_folder: str, i_filename: str, i_submit=False):
+    def import_file(
+        self,
+        i_folder: str,
+        i_filename: str,
+        i_submit: bool = False,
+        i_create_from: str | None = None,
+        i_purpose: str | None = None,
+    ):
         """
         Import all records from a cached JSON file.
         """
@@ -53,22 +87,37 @@ class cl_demo_importer:
 
         # Dictionary instance reference tracking an entry row during process loops
         for ld_record in la_records:
-            self.import_doc(ld_record, i_submit)
+            self.import_doc(
+                id_record=ld_record,
+                i_submit=i_submit,
+                i_create_from=i_create_from,
+                i_purpose=i_purpose,
+            )
 
         frappe.db.commit()
 
     # -------------------------------------------------------------------------
 
-    def import_doc(self, id_record: dict, i_submit=False):
+    def import_doc(
+        self,
+        id_record: dict,
+        i_submit: bool = False,
+        i_create_from: str | None = None,
+        i_purpose: str | None = None,
+    ):
         """
         Import a single document.
         """
-
+        
         if self.document_exists(id_record):
             return
 
         # Dictionary document reference fetching the mapped data object model
-        ld_doc = frappe.get_doc(id_record)
+        ld_doc = self.make_document(
+                    id_record=id_record,
+                    i_create_from=i_create_from,
+                    i_purpose=i_purpose,
+                )
 
         ld_doc.insert(
             ignore_permissions=True,
@@ -77,6 +126,414 @@ class cl_demo_importer:
             ld_doc.submit()
 
     # -------------------------------------------------------------------------
+    def make_document(
+        self,
+        id_record: dict,
+        i_create_from: str | None = None,
+        i_purpose: str | None = None,
+    ):
+        """
+        Create a document.
+
+        If i_create_from is specified, the document is created using
+        ERPNext's mapping methods.
+
+        Otherwise the JSON is imported directly.
+        """
+
+        if not i_create_from:
+            return frappe.get_doc(id_record)
+
+        if i_create_from == "Purchase Order":
+            return self.make_purchase_receipt(id_record)
+
+        if i_create_from == "Purchase Receipt":
+            return self.make_purchase_invoice(id_record)
+
+        if i_create_from == "Quotation":
+            return self.make_sales_order(id_record)
+
+        if i_create_from == "Sales Order":
+            return self.make_delivery_note(id_record)
+
+        if i_create_from == "Delivery Note":
+            return self.make_sales_invoice(id_record)
+
+        if i_create_from == "Work Order":
+            return self.make_stock_entry(id_record)
+        
+        if i_create_from == "Sales Invoice":
+            return self.make_payment_entry(id_record)
+
+        if i_create_from == "Purchase Invoice":
+            return self.make_payment_entry(id_record)
+
+        frappe.throw(
+            f"Unsupported create_from: {i_create_from}"
+        )
+
+    def update_document(
+        self,
+        id_doc,
+        id_record,
+    ):
+        """
+        Update a mapped document using values from the JSON record.
+        """
+
+        # Dictionary collection capturing field names that must be skipped
+        ld_skip_fields = {
+            "doctype",
+            "items",
+            "docstatus",
+            "status",
+            "idx",
+            "owner",
+            "creation",
+            "modified",
+            "modified_by",
+        }
+
+        # Looping through JSON attributes with scalar and dictionary properties
+        for l_fieldname, l_value in id_record.items():
+
+            if l_fieldname in ld_skip_fields:
+                continue
+
+            setattr(
+                id_doc,
+                l_fieldname,
+                l_value,
+            )
+
+        return id_doc
+    #-----------------------------------------------------------------------
+
+    def update_child_rows(
+        self,
+        id_doc,
+        id_record,
+    ):
+        """
+        Update child table values from JSON while preserving
+        ERPNext-generated row links.
+        """
+
+        if "items" not in id_record:
+            return
+
+        # Array container extracting the items row tracking block from input data
+        la_json_items = id_record["items"]
+        ld_doc_items = id_doc.get("items") if isinstance(id_doc, dict) else id_doc.items
+
+        # Index loop using scalar and dictionary elements to process sequential entries
+        for l_index, ld_json_row in enumerate(la_json_items):
+
+            if l_index >= len(ld_doc_items):
+                frappe.throw(
+                    "JSON contains more item rows than the mapped document."
+                )
+
+            # Dictionary-like reference mapping to the corresponding core row model object
+            ld_doc_row = ld_doc_items[l_index]
+
+            # Nested iteration capturing sub-table properties across target rows
+            for l_fieldname, l_value in ld_json_row.items():
+
+                if l_fieldname in (
+                    "doctype",
+                    "name",
+                ):
+                    continue
+
+                if isinstance(ld_doc_row, dict):
+                    ld_doc_row[l_fieldname] = l_value
+                else:
+                    setattr(ld_doc_row, l_fieldname, l_value)
+    #--------------------------------------------------------------------------
+
+    def make_purchase_receipt(
+        self,
+        id_record,
+    ):
+        """
+        Create a Purchase Receipt from a Purchase Order.
+        """
+
+        # Local scalar tracking the reference string ID of the purchase order
+        l_purchase_order = (
+            id_record.get("purchase_order")
+            or id_record.get("against_purchase_order")
+        )
+
+        if not l_purchase_order:
+            frappe.throw(
+                "purchase_order is required in Purchase Receipt JSON."
+            )
+
+        # Dictionary mapping the newly instantiated document model object
+        ld_doc = make_purchase_receipt(
+            l_purchase_order
+        )
+
+        self.update_document(
+            ld_doc,
+            id_record,
+        )
+
+        self.update_child_rows(
+            ld_doc,
+            id_record,
+        )
+
+        return ld_doc
+    
+    #----------------------------------------------------------
+    def make_purchase_invoice(
+        self,
+        id_record,
+    ):
+        """
+        Create a Purchase Invoice from a Purchase Receipt.
+        """
+
+        # Local scalar tracking the reference string ID of the purchase receipt
+        l_purchase_receipt = (
+            id_record.get("purchase_receipt")
+            or id_record.get("against_purchase_receipt")
+        )
+
+        if not l_purchase_receipt:
+            frappe.throw(
+                "purchase_receipt is required in Purchase Invoice JSON."
+            )
+
+        # Dictionary mapping the newly instantiated document model object
+        ld_doc = make_purchase_invoice(
+            l_purchase_receipt
+        )
+
+        self.update_document(
+            ld_doc,
+            id_record,
+        )
+
+        self.update_child_rows(
+            ld_doc,
+            id_record,
+        )
+
+        return ld_doc
+    #--------------------------------------------------------------
+
+    def make_sales_order(
+        self,
+        id_record,
+    ):
+        """
+        Create a Sales Order from a Quotation.
+        """
+
+        # Local scalar tracking the reference string ID of the quotation source document
+        l_quotation = (
+            id_record.get("quotation")
+            or id_record.get("against_quotation")
+        )
+
+        if not l_quotation:
+            frappe.throw(
+                "quotation is required in Sales Order JSON."
+            )
+
+        # Dictionary mapping the newly instantiated document model object
+        ld_doc = make_sales_order(
+            l_quotation
+        )
+        ld_doc.delivery_date = add_months(
+            ld_doc.transaction_date,
+            1
+        )
+
+        self.update_document(
+            ld_doc,
+            id_record,
+        )
+
+        self.update_child_rows(
+            ld_doc,
+            id_record,
+        )
+
+        return ld_doc
+    #----------------------------------------------------
+
+    def make_delivery_note(
+        self,
+        id_record,
+    ):
+        """
+        Create a Delivery Note from a Sales Order.
+        """
+
+        # Local scalar tracking the reference string ID of the sales order source document
+        l_sales_order = (
+            id_record.get("sales_order")
+            or id_record.get("against_sales_order")
+        )
+
+        if not l_sales_order:
+            frappe.throw(
+                "sales_order is required in Delivery Note JSON."
+            )
+
+        # Dictionary mapping the newly instantiated document model object
+        ld_doc = make_delivery_note(
+            l_sales_order
+        )
+
+        self.update_document(
+            ld_doc,
+            id_record,
+        )
+
+        self.update_child_rows(
+            ld_doc,
+            id_record,
+        )
+
+        return ld_doc
+    #---------------------------------------------------------
+
+    def make_sales_invoice(
+        self,
+        id_record,
+    ):
+        """
+        Create a Sales Invoice from a Delivery Note.
+        """
+
+        # Local scalar tracking the reference string ID of the delivery note source document
+        l_delivery_note = (
+            id_record.get("delivery_note")
+            or id_record.get("against_delivery_note")
+        )
+
+        if not l_delivery_note:
+            frappe.throw(
+                "delivery_note is required in Sales Invoice JSON."
+            )
+
+        # Dictionary mapping the newly instantiated document model object
+        ld_doc = make_sales_invoice(
+            l_delivery_note
+        )
+
+        self.update_document(
+            ld_doc,
+            id_record,
+        )
+
+        self.update_child_rows(
+            ld_doc,
+            id_record,
+        )
+
+        return ld_doc
+    #------------------------------------------------------
+
+    def make_payment_entry(
+        self,
+        id_record,
+    ):
+        """
+        Create a Payment Entry from a Sales Invoice or Purchase Invoice.
+        """
+
+        if id_record.get("sales_invoice"):
+            # Local scalar tracking the targeted reference doctype string identifier
+            l_reference_doctype = "Sales Invoice"
+            # Local scalar capturing the specific document transaction key value
+            l_reference_name = id_record["sales_invoice"]
+
+        elif id_record.get("purchase_invoice"):
+            # Local scalar tracking the targeted reference doctype string identifier
+            l_reference_doctype = "Purchase Invoice"
+            # Local scalar capturing the specific document transaction key value
+            l_reference_name = id_record["purchase_invoice"]
+
+        else:
+            frappe.throw(
+                "Either sales_invoice or purchase_invoice must be specified."
+            )
+
+        # Dictionary mapping the newly instantiated document model object
+        ld_doc = get_payment_entry(
+            l_reference_doctype,
+            l_reference_name,
+        )
+
+        self.update_document(
+            ld_doc,
+            id_record,
+        )
+
+        return ld_doc
+    #--------------------------------------------------
+
+    def make_stock_entry(
+        self,
+        id_record,
+    ):
+        """
+        Create a Stock Entry from a Work Order using ERPNext's native
+        Work Order mapper.
+
+        Supported purposes:
+            - Material Transfer for Manufacture
+            - Manufacture
+            - Material Consumption for Manufacture
+        """
+
+        # Local scalar tracking the reference string ID of the work order source document
+        l_work_order = id_record.get("work_order")
+
+        if not l_work_order:
+            frappe.throw(
+                "work_order is required for Stock Entry."
+            )
+
+        # Local scalar capturing the explicit configuration purpose string mapping type
+        l_purpose = id_record.get("stock_entry_type")
+
+        if l_purpose not in (
+            "Material Transfer for Manufacture",
+            "Manufacture",
+            "Material Consumption for Manufacture",
+        ):
+            frappe.throw(
+                f"Unsupported Stock Entry type: {l_purpose}"
+            )
+
+        # Dictionary mapping the newly instantiated stock entry document model object
+        ld_doc = frappe.get_doc(
+            make_stock_entry(
+                work_order_id=l_work_order,
+                purpose=l_purpose,
+                qty=id_record.get("fg_completed_qty"),
+            )
+        )
+
+        self.update_document(
+            ld_doc,
+            id_record,
+        )
+
+        self.update_child_rows(
+            ld_doc,
+            id_record,
+        )
+
+        return ld_doc
 
     # -------------------------------------------------------------------------
     # Composite uniqueness rules
@@ -107,6 +564,9 @@ class cl_demo_importer:
 
         # Scalar tracker representing targeted field metadata layout context
         l_doctype = id_record["doctype"]
+
+        if l_doctype == "Stock Entry":
+            return False
 
         # ------------------------------------------------------------------
         # Composite uniqueness rules
@@ -225,7 +685,6 @@ def import_master_documents(i_industry: str, i_show_progress: bool = True):
                     f"Importing {ld_file_info['doctype']}...",
                     30 + int(l_index / max(l_total, 1) * 30),
                 )
-
             ld_importer.import_file(
                 i_folder="masters",
                 i_filename=ld_file_info["file"],
@@ -289,6 +748,8 @@ def import_transaction_documents(i_industry: str, i_show_progress: bool = True):
                 i_folder="transactions",
                 i_filename=ld_file_info["file"],
                 i_submit=ld_file_info.get("submit", False),
+                i_create_from=ld_file_info.get("create_from"),
+                i_purpose=ld_file_info.get("purpose"),
             )
 
         finish_installation(i_industry, i_show_progress)

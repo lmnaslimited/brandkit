@@ -240,11 +240,6 @@ $(() => {
                 Date.now() + LOneWeek
             );
 
-            frappe.show_alert({
-                message: __("We'll remind you again in one week."),
-                indicator: "blue",
-            });
-
             this.close();
 
         }

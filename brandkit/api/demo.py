@@ -13,7 +13,7 @@ Responsibilities
 """
 
 from __future__ import annotations
-
+from frappe import _
 import frappe
 
 from brandkit.setup.demo import cl_demo_data_factory
@@ -61,7 +61,7 @@ def setup_demo_data(i_industry: str, i_show_progress: bool = True):
     """
 
     if not i_industry:
-        frappe.throw("Please select an industry.")
+        frappe.throw(_("Please select an industry."))
 
     # Initialize local variable from parameter for modification
     l_show_progress = i_show_progress

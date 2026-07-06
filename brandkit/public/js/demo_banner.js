@@ -121,7 +121,7 @@ $(() => {
             <div id="brandkit-demo-toast" class="brandkit-demo-toast">
                 <div class="brandkit-demo-header">
                     <div class="brandkit-demo-title">
-                        ✨ Setup Demo Data
+                    ${__("✨ Setup Demo Data")}
                     </div>
                     <div class="brandkit-demo-actions">
                         <button type="button" id="brandkit-demo-close" title="Close">
@@ -131,11 +131,11 @@ $(() => {
                 </div>
                 <div class="brandkit-demo-body">
                     <div class="brandkit-demo-description">
-                        Install sample data for a selected industry.
+                    ${__("Install sample data for a selected industry.")}
                     </div>
                     <select class="form-control" id="brandkit-demo-industry">
                         <option value="">
-                            Select Industry
+                        ${__("Select Industry")}
                         </option>
                         ${LOptions}
                     </select>
@@ -145,7 +145,7 @@ $(() => {
                             class="btn btn-primary"
                             id="brandkit-demo-install">
 
-                            Setup Demo Data
+                            ${__("Setup Demo Data")}
 
                         </button>
 
@@ -153,7 +153,7 @@ $(() => {
                             class="btn btn-default"
                             id="brandkit-demo-remind">
 
-                            Remind Later
+                            ${__("Remind Later")}
 
                         </button>
 

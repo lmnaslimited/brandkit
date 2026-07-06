@@ -58,6 +58,18 @@ $(() => {
                 return;
             }
 
+            // Has the user chosen "Remind Later"?
+            const LRemindUntil = Number(
+                localStorage.getItem("brandkit_demo_remind_until")
+            );
+
+            if (
+                LRemindUntil &&
+                Date.now() < LRemindUntil
+            ) {
+                return;
+            }
+
             await this.load_state();
 
             if (!this.ldState || !this.ldState.show_banner) {
@@ -127,9 +139,25 @@ $(() => {
                         </option>
                         ${LOptions}
                     </select>
-                    <button class="btn btn-primary btn-block" id="brandkit-demo-install">
-                        Setup Demo Data
-                    </button>
+                    <div class="brandkit-demo-controls">
+
+                        <button
+                            class="btn btn-primary"
+                            id="brandkit-demo-install">
+
+                            Setup Demo Data
+
+                        </button>
+
+                        <button
+                            class="btn btn-default"
+                            id="brandkit-demo-remind">
+
+                            Remind Later
+
+                        </button>
+
+                    </div>
                 </div>
             </div>
             `;
@@ -174,6 +202,16 @@ $(() => {
                     this.close();
 
                 });
+
+            // Remind Later
+            this.$banner
+            .find("#brandkit-demo-remind")
+            .off("click")
+            .on("click", () => {
+
+                this.remindLater();
+
+            });
         }
 
         // Close function for the Banner
@@ -186,6 +224,29 @@ $(() => {
             this.$banner = null;
             this.lRendered = false;
             sessionStorage.setItem("brandkit_demo_banner_closed", "1");
+        }
+        //------------------------------------------------------------------
+        // Remind Later
+        //------------------------------------------------------------------
+
+        remindLater() {
+
+            // One week in milliseconds.
+            const LOneWeek = 60 * 1000;
+                // 7 * 24 * 60 * 60 * 1000;
+
+            localStorage.setItem(
+                "brandkit_demo_remind_until",
+                Date.now() + LOneWeek
+            );
+
+            frappe.show_alert({
+                message: __("We'll remind you again in one week."),
+                indicator: "blue",
+            });
+
+            this.close();
+
         }
 
         // Setup Demo
@@ -310,6 +371,10 @@ $(() => {
             setTimeout(() => {
                 // Hide progress dialog.
                 LdBanner.ldProgressDialog.hide();
+
+                localStorage.removeItem(
+                    "brandkit_demo_remind_until"
+                );
 
                 // Remove banner.
                 LdBanner.close();

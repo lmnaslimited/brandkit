@@ -43,11 +43,7 @@
 .brandkit-demo-controls {
 
 	display: flex;
-
-	align-items: center;
-
-	gap: 12px;
-
+	gap: 10px;
 	flex-wrap: wrap;
 }
 
@@ -67,8 +63,8 @@
 
 .brandkit-demo-controls .btn {
 
-	width: 100%;
-	height: 38px;
+	flex: 1;
+    height: 38px;
 }
 
 /* ------------------------------------------------------------------ */

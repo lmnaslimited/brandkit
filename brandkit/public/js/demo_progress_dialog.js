@@ -99,7 +99,7 @@ $(() => {
 					<div
 						class="brandkit-progress-message"
 					>
-						Preparing installation...
+					${__("Preparing installation...")}
 					</div>
 
 					<div

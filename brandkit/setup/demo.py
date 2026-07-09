@@ -14,7 +14,7 @@ No importing happens here yet.
 """
 
 import frappe
-
+from frappe import _
 from brandkit.setup.progress import update_progress
 from brandkit.setup.repository import cl_demo_repository
 from brandkit.setup.importer import cl_demo_importer
@@ -55,7 +55,7 @@ class cl_demo_data_factory:
 
         # Skip installation if demo data already exists
         if ld_factory.demo_exists():
-            update_progress("Demo data is already installed.", 100)
+            update_progress(_("Demo data is already installed."), 100)
             return
 
         # Validate existing transaction data
@@ -65,7 +65,7 @@ class cl_demo_data_factory:
         # Download and cache all demo resources from the repository
         # ------------------------------------------------------------------
         if ld_factory.l_show_progress:
-            update_progress("Downloading demo resources...", 20)
+            update_progress(_("Downloading demo resources..."), 20)
 
         ld_factory.ld_repository.download_from_manifest()
 
@@ -135,12 +135,12 @@ class cl_demo_data_factory:
             if frappe.db.count(l_doctype):
 
                 frappe.throw(
-                    (
-                        f"Transaction data already exists for <b>{l_doctype}</b>.<br><br>"
-                        "Please delete the existing transaction data first.<br><br>"
-                        "Go to <b>Company → Click Manage → Delete Transactions</b> "
-                        "and remove the transactions before installing "
-                        "BrandKit Demo Data."
-                    ),
-                    title="Existing Transaction Data Found",
+                    _(
+						"Transaction data already exists for <b>{0}</b>.<br><br>"
+						"Please delete existing transaction data first.<br><br>"
+						"Go to <b>Company → Click Manage → Delete Transactions</b> "
+						"and remove existing records before installing "
+						"BrandKit Demo Data."
+					).format(l_doctype),
+					title=_("Existing Transaction Data Found"),
                 )

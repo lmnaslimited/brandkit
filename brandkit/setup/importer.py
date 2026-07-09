@@ -14,7 +14,7 @@ by cl_demo_repository.
 """
 
 from __future__ import annotations
-
+from frappe import _
 import json
 from frappe.utils import add_months
 import frappe
@@ -79,7 +79,7 @@ class cl_demo_importer:
         l_file_path = self.l_cache_root / i_folder / i_filename
 
         if not l_file_path.exists():
-            frappe.throw(f"Demo file not found:\n{l_file_path}")
+            frappe.throw(_("Demo file not found:\n{0}").format(l_file_path))
 
         with open(l_file_path, encoding="utf-8") as file:
             # Array block loading parsed dictionary components from source file
@@ -169,7 +169,7 @@ class cl_demo_importer:
             return self.make_payment_entry(id_record)
 
         frappe.throw(
-            f"Unsupported create_from: {i_create_from}"
+            _("Unsupported create_from: {0}").format(i_create_from)
         )
 
     def update_document(
@@ -231,7 +231,7 @@ class cl_demo_importer:
 
             if l_index >= len(ld_doc_items):
                 frappe.throw(
-                    "JSON contains more item rows than the mapped document."
+                    _("JSON contains more item rows than the mapped document.")
                 )
 
             # Dictionary-like reference mapping to the corresponding core row model object
@@ -268,7 +268,7 @@ class cl_demo_importer:
 
         if not l_purchase_order:
             frappe.throw(
-                "purchase_order is required in Purchase Receipt JSON."
+                _("Purchase Order is required in the Purchase Receipt JSON.")
             )
 
         # Dictionary mapping the newly instantiated document model object
@@ -305,7 +305,7 @@ class cl_demo_importer:
 
         if not l_purchase_receipt:
             frappe.throw(
-                "purchase_receipt is required in Purchase Invoice JSON."
+                _("Purchase Receipt is required in the Purchase Invoice JSON.")
             )
 
         # Dictionary mapping the newly instantiated document model object
@@ -342,7 +342,7 @@ class cl_demo_importer:
 
         if not l_quotation:
             frappe.throw(
-                "quotation is required in Sales Order JSON."
+                _("Quotation is required in the Sales Order JSON.")
             )
 
         # Dictionary mapping the newly instantiated document model object
@@ -383,7 +383,7 @@ class cl_demo_importer:
 
         if not l_sales_order:
             frappe.throw(
-                "sales_order is required in Delivery Note JSON."
+                _("Sales Order is required in the Delivery Note JSON.")
             )
 
         # Dictionary mapping the newly instantiated document model object
@@ -420,7 +420,7 @@ class cl_demo_importer:
 
         if not l_delivery_note:
             frappe.throw(
-                "delivery_note is required in Sales Invoice JSON."
+                _("Delivery Note is required in the Sales Invoice JSON.")
             )
 
         # Dictionary mapping the newly instantiated document model object
@@ -463,7 +463,7 @@ class cl_demo_importer:
 
         else:
             frappe.throw(
-                "Either sales_invoice or purchase_invoice must be specified."
+                _("Either a Sales Invoice or Purchase Invoice must be specified.")
             )
 
         # Dictionary mapping the newly instantiated document model object
@@ -499,7 +499,7 @@ class cl_demo_importer:
 
         if not l_work_order:
             frappe.throw(
-                "work_order is required for Stock Entry."
+                _("Work Order is required for Stock Entry.")
             )
 
         # Local scalar capturing the explicit configuration purpose string mapping type
@@ -511,7 +511,7 @@ class cl_demo_importer:
             "Material Consumption for Manufacture",
         ):
             frappe.throw(
-                f"Unsupported Stock Entry type: {l_purpose}"
+                _("Unsupported Stock Entry type: {0}").format(l_purpose)
             )
 
         # Dictionary mapping the newly instantiated stock entry document model object
@@ -682,7 +682,7 @@ def import_master_documents(i_industry: str, i_show_progress: bool = True):
         for l_index, ld_file_info in enumerate(la_masters, start=1):
             if i_show_progress:
                 update_progress(
-                    f"Importing {ld_file_info['doctype']}...",
+                    _("Importing {0}...").format(ld_file_info["doctype"]),
                     30 + int(l_index / max(l_total, 1) * 30),
                 )
             ld_importer.import_file(
@@ -707,7 +707,9 @@ def import_master_documents(i_industry: str, i_show_progress: bool = True):
 
         if i_show_progress:
             update_progress(
-                f"Installation failed.<br>{frappe.utils.escape_html(str(e))}",
+                _("Installation failed.<br>{0}").format(
+                    frappe.utils.escape_html(str(e))
+                ),
                 -1,
             )
 
@@ -740,7 +742,7 @@ def import_transaction_documents(i_industry: str, i_show_progress: bool = True):
 
             if i_show_progress:
                 update_progress(
-                    f"Importing {ld_file_info['doctype']}...",
+                    _("Importing {0}...").format(ld_file_info["doctype"]),
                     60 + int(l_index / max(l_total, 1) * 35),
                 )
 
@@ -761,7 +763,9 @@ def import_transaction_documents(i_industry: str, i_show_progress: bool = True):
 
         if i_show_progress:
             update_progress(
-                f"Installation failed.<br>{frappe.utils.escape_html(str(e))}",
+                _("Installation failed.<br>{0}").format(
+                    frappe.utils.escape_html(str(e))
+                ),
                 -1,
             )
 
@@ -790,6 +794,6 @@ def finish_installation(i_industry: str, i_show_progress: bool = True):
 
     if i_show_progress:
         update_progress(
-            "Demo setup completed.",
+            _("Demo setup completed."),
             100,
         )

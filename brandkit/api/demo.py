@@ -31,6 +31,14 @@ def get_demo_banner_state():
     Returns whether the demo banner should be displayed.
     """
 
+    if "erpnext" not in frappe.get_installed_apps():
+        return {
+            "show_banner": False,
+            "installed": False,
+            "industry": None,
+            "industries": [],
+        }
+
     # Fetching application configurations as a dictionary object
     ld_settings = frappe.get_single("BrandKit Settings")
 

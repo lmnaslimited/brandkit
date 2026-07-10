@@ -65,7 +65,6 @@ def set_website_settings():
 
     # Assign new value configurations to the Website Settings document fields
     ld_settings.app_name = "LENS"
-    ld_settings.disable_signup = 0
     ld_settings.footer_powered = "LENS Powered by Frappe"
     ld_settings.app_logo = l_app_logo
     ld_settings.banner_image = l_banner

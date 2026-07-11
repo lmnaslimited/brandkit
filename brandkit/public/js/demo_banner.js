@@ -232,8 +232,7 @@ $(() => {
         remindLater() {
 
             // One week in milliseconds.
-            const LOneWeek = 60 * 1000;
-                // 7 * 24 * 60 * 60 * 1000;
+            const LOneWeek = 7 * 24 * 60 * 60 * 1000;
 
             localStorage.setItem(
                 "brandkit_demo_remind_until",

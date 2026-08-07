@@ -48,6 +48,9 @@ def after_install():
     # Execute the setup for top navigation bar branding
     set_navbar_settings()
 
+    # Execute the setup for authentication & security configurations
+    set_system_settings()
+
 
 def set_website_settings():
     """
@@ -96,4 +99,30 @@ def set_navbar_settings():
     ld_navbar.save(ignore_permissions=True)
 
     # Commit the transaction to the database so changes persist permanently
+    frappe.db.commit()
+
+def set_system_settings():
+    """
+    Updates Frappe's 'System Settings' Single DocType configuration
+    to disable password logins and disable email link logins.
+    """
+    # NOTE: Standard `doc.save()` triggers Frappe's `validate_user_pass_login()` 
+    # validation hook. Frappe requires at least ONE active login method 
+    # (Email Link, Social Login / OAuth, or LDAP) before allowing 
+    # `disable_user_pass_login = 1`. 
+    #
+    # On a fresh site installation where no OAuth/LDAP keys are configured yet,
+    # setting `disable_user_pass_login = 1` and `login_with_email_link = 0` simultaneously
+    # throws a ValidationError. 
+    #
+    # Using `frappe.db.set_single_value` updates the database table directly, 
+    # bypassing Document lifecycle hooks (validate / before_save).
+
+    # 1. Disable traditional Username + Password authentication field on the login page
+    frappe.db.set_single_value("System Settings", "disable_user_pass_login", 1)
+
+    # 2. Disable passwordless "Login with Email Link" (Magic Link) functionality
+    frappe.db.set_single_value("System Settings", "login_with_email_link", 0)
+
+    # Commit the direct database changes so they persist permanently on site setup
     frappe.db.commit()

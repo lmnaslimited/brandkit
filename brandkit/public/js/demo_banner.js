@@ -53,7 +53,7 @@ $(() => {
                 this.lRendered = true;
                 return;
             }
-            
+
             if (sessionStorage.getItem("brandkit_demo_banner_closed")) {
                 return;
             }
@@ -174,7 +174,12 @@ $(() => {
 
             $("body").append(this.$banner);
 
-            // Progress dialog.
+            // Progress dialog. This is now the SINGLE owner of the
+            // "brandkit_demo_progress" realtime listener (see
+            // demo_progress_dialog.js -> listen()). The banner no longer
+            // registers its own listener for the same event -- having two
+            // owners fight over frappe.realtime.on/off for the same event
+            // name was silently dropping progress updates.
             this.ldProgressDialog = new brandkit.demo.clProgressDialog();
         }
 
@@ -260,6 +265,10 @@ $(() => {
             }
 
             this.disable_controls();
+
+            // Registers the realtime listener BEFORE the API call is
+            // fired, so nothing published during the call (or by the
+            // background job right after) can be missed.
             this.ldProgressDialog.start();
 
             try {
@@ -345,41 +354,13 @@ $(() => {
         }
     };
 
-    // ---------------------------------------------------------------------
-    // Realtime Progress Listener
-    // ---------------------------------------------------------------------
-
-    frappe.realtime.on("brandkit_demo_progress", (idData) => {
-        // Constant dictionary element mapping workspace setup tracks
-        const LdBanner = brandkit.demo.banner;
-
-        if (!LdBanner || !LdBanner.ldProgressDialog) {
-            return;
-        }
-
-        // Update Progress Dialog.
-        LdBanner.ldProgressDialog.update(idData.progress, idData.message);
-
-        // Installation finished.
-        if (idData.progress >= 100) {
-            setTimeout(() => {
-                // Hide progress dialog.
-                LdBanner.ldProgressDialog.hide();
-
-                localStorage.removeItem(
-                    "brandkit_demo_remind_until"
-                );
-
-                // Remove banner.
-                LdBanner.close();
-
-                frappe.show_alert({
-                    message: __("Demo data installed successfully."),
-                    indicator: "green",
-                });
-            }, 1200);
-        }
-    });
+    // NOTE: the old global `frappe.realtime.on("brandkit_demo_progress", ...)`
+    // listener that used to live here has been removed. It was being torn
+    // down by demo_progress_dialog.js's listen() (which calls
+    // frappe.realtime.off("brandkit_demo_progress") to clear stale
+    // listeners before adding its own), and it duplicated completion
+    // handling that the dialog already does in success(). The dialog is
+    // now the single source of truth for this event.
 
     // ---------------------------------------------------------------------
     // Lifecycle Triggers

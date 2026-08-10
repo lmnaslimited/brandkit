@@ -15,7 +15,7 @@ No importing happens here yet.
 
 import frappe
 from frappe import _
-from brandkit.setup.progress import update_progress
+from brandkit.setup.progress import update_progress, clear_progress
 from brandkit.setup.repository import cl_demo_repository
 from brandkit.setup.importer import cl_demo_importer
 
@@ -43,6 +43,23 @@ class cl_demo_data_factory:
         i_show_progress : bool
             Whether to broadcast progress metrics.
         """
+        if i_show_progress:
+            # Clear any snapshot left over from a previous attempt
+            # (success or failure) *before* doing anything else.
+            #
+            # Without this, a retry after a failed install could have
+            # its dialog start polling get_demo_progress() before this
+            # run has written its own first update -- and read the
+            # PREVIOUS attempt's {-1, "Installation failed..."} snapshot,
+            # showing an instant false failure for the new attempt.
+            #
+            # Deliberately NOT clearing at the end of a run instead:
+            # doing so risks a poll landing right after the clear and
+            # seeing "not started yet" instead of the real final
+            # 100%/-1 outcome, defeating the point of polling. The
+            # cache entry's own TTL (see progress.py) cleans it up
+            # naturally once nobody's asking anymore.
+            clear_progress()
 
         # Dictionary-like reference mapping the local factory engine instance
         ld_factory = cl_demo_data_factory()

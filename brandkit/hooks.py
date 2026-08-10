@@ -27,6 +27,14 @@ app_license = "mit"
 # include js, css files in header of desk.html
 # app_include_css = "/assets/brandkit/css/brandkit.css"
 # app_include_js = "/assets/brandkit/js/brandkit.js"
+app_include_js = [
+    "/assets/brandkit/js/demo_progress_dialog.js",
+    "/assets/brandkit/js/demo_banner.js",
+]
+
+app_include_css = [
+    "/assets/brandkit/css/demo_banner.css",
+]
 
 # include js, css files in header of web template
 # web_include_css = "/assets/brandkit/css/brandkit.css"
@@ -86,7 +94,7 @@ app_license = "mit"
 # ------------
 
 # before_install = "brandkit.install.before_install"
-after_install = "brandkit.setup.after_install"
+after_install = "brandkit.install.after_install"
 
 # Uninstallation
 # ------------

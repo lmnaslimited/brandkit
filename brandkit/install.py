@@ -3,7 +3,7 @@ import frappe
 from frappe.utils.file_manager import save_file
 
 
-def fn_upload_file(i_filename):
+def upload_file(i_filename):
     """
     Locates a file within the app's public/images directory, reads its content,
     and uploads it to Frappe's file manager system as a public file.
@@ -37,35 +37,37 @@ def fn_upload_file(i_filename):
     return l_file_doc.file_url
 
 
-def fn_after_install():
+def after_install():
     """
     Frappe hook function that executes automatically after the application is installed.
     It triggers the configuration setup for both Website and Navbar settings.
     """
     # Execute the setup for system website branding and configurations
-    fn_set_website_settings()
+    set_website_settings()
     
     # Execute the setup for top navigation bar branding
-    fn_set_navbar_settings()
+    set_navbar_settings()
+
+    # Execute the setup for authentication & security configurations
+    set_system_settings()
 
 
-def fn_set_website_settings():
+def set_website_settings():
     """
     Uploads the necessary branding assets and updates Frappe's 
     'Website Settings' Single DocType with the new identity config.
     """
     # Upload the 'lensicon.png' for various UI components and store their public URLs
-    l_favicon = fn_upload_file("lensicon.png")
-    l_banner = fn_upload_file("lensicon.png")
-    l_splash = fn_upload_file("lensicon.png")
-    l_app_logo = fn_upload_file("lensicon.png")
+    l_favicon = upload_file("lensicon.png")
+    l_banner = upload_file("lensicon.png")
+    l_splash = upload_file("lensicon.png")
+    l_app_logo = upload_file("lensicon.png")
 
     # Fetch the Single DocType instance for 'Website Settings' to modify global portal UI
     ld_settings = frappe.get_single("Website Settings")
 
     # Assign new value configurations to the Website Settings document fields
     ld_settings.app_name = "LENS"
-    ld_settings.disable_signup = 0
     ld_settings.footer_powered = "LENS Powered by Frappe"
     ld_settings.app_logo = l_app_logo
     ld_settings.banner_image = l_banner
@@ -79,13 +81,13 @@ def fn_set_website_settings():
     frappe.db.commit()
 
 
-def fn_set_navbar_settings():
+def set_navbar_settings():
     """
     Uploads the navbar logo asset and updates Frappe's 
     'Navbar Settings' Single DocType configuration.
     """
     # Upload the 'lensicon.png' to use specifically as the Navigation Bar logo
-    l_app_logo = fn_upload_file("lensicon.png")
+    l_app_logo = upload_file("lensicon.png")
 
     # Fetch the Single DocType instance for 'Navbar Settings' to modify global header UI
     ld_navbar = frappe.get_single("Navbar Settings")
@@ -97,4 +99,30 @@ def fn_set_navbar_settings():
     ld_navbar.save(ignore_permissions=True)
 
     # Commit the transaction to the database so changes persist permanently
+    frappe.db.commit()
+
+def set_system_settings():
+    """
+    Updates Frappe's 'System Settings' Single DocType configuration
+    to disable password logins and disable email link logins.
+    """
+    # NOTE: Standard `doc.save()` triggers Frappe's `validate_user_pass_login()` 
+    # validation hook. Frappe requires at least ONE active login method 
+    # (Email Link, Social Login / OAuth, or LDAP) before allowing 
+    # `disable_user_pass_login = 1`. 
+    #
+    # On a fresh site installation where no OAuth/LDAP keys are configured yet,
+    # setting `disable_user_pass_login = 1` and `login_with_email_link = 0` simultaneously
+    # throws a ValidationError. 
+    #
+    # Using `frappe.db.set_single_value` updates the database table directly, 
+    # bypassing Document lifecycle hooks (validate / before_save).
+
+    # 1. Disable traditional Username + Password authentication field on the login page
+    frappe.db.set_single_value("System Settings", "disable_user_pass_login", 1)
+
+    # 2. Disable passwordless "Login with Email Link" (Magic Link) functionality
+    frappe.db.set_single_value("System Settings", "login_with_email_link", 0)
+
+    # Commit the direct database changes so they persist permanently on site setup
     frappe.db.commit()
